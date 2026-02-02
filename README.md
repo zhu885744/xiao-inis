@@ -1,5 +1,9 @@
 ## inis **buyu** 单栏主题
-基于 Vue 3 + js + Vite 开发的 inis 主题开发模版
+基于 Vue 3 + js + Vite 开发的 inis 主题
+
+## 功能特点
+完全的响应式设计
+极高速度的
 
 ## 开发
 ```

@@ -1,18 +1,24 @@
 <template>
-  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+  <!-- 顶部导航栏 -->
+  <nav class="navbar navbar-expand-lg bg-body-tertiary ">
     <div class="container">
       <!-- 网站标题：跳首页 -->
       <router-link class="navbar-brand" to="/">朱某的生活印记</router-link>
-      
-      <!-- 移动端折叠按钮 -->
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+
+      <!-- 移动端侧边栏触发按钮 -->
+      <button 
+        class="navbar-toggler d-lg-none" 
+        type="button" 
+        @click="toggleSidebar"
+        aria-label="Toggle navigation"
+      >
         <span class="navbar-toggler-icon"></span>
       </button>
 
-      <!-- 导航核心内容 -->
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <!-- PC端导航内容 -->
+      <div class="collapse navbar-collapse d-none d-lg-flex" id="navbarSupportedContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <!-- 首页：路由跳转 + 激活样式自动匹配 -->
+          <!-- 首页 -->
           <li class="nav-item">
             <router-link class="nav-link" aria-current="page" to="/" active-class="active" exact-active-class="active">
               首页
@@ -25,7 +31,6 @@
               分类
             </a>
             <ul class="dropdown-menu">
-              <!-- 优化后的分类项 -->
               <li v-for="category in categories" :key="category.id" class="dropdown-item p-0">
                 <router-link class="nav-link d-block w-100 h-100 py-2 px-4 text-decoration-none" :to="`/category/${category.key}`">
                   {{ category.name }}
@@ -46,7 +51,6 @@
         </ul>
         <div role="group" aria-label="操作按钮组">
           <button class="btn btn-outline-secondary ms-2" type="submit"><i class="bi bi-search"></i></button>
-          
           <!-- 深色/浅色模式切换按钮 -->
           <button 
             class="btn btn-outline-secondary ms-2" 
@@ -56,12 +60,106 @@
           >
             <i :class="darkModeIcon"></i>
           </button>
-
           <button class="btn btn-outline-secondary ms-2" type="submit"><i class="bi bi-person-circle"></i></button>
         </div>
       </div>
     </div>
   </nav>
+
+  <!-- 移动端侧边栏 -->
+  <div 
+    class="sidebar offcanvas offcanvas-start" 
+    tabindex="-1" 
+    id="mobileSidebar"
+    aria-labelledby="mobileSidebarLabel"
+  >
+    <div class="offcanvas-header border-bottom">
+      <h5 class="offcanvas-title" id="mobileSidebarLabel">朱某的生活印记</h5>
+      <button 
+        type="button" 
+        class="btn-close" 
+        @click="closeSidebar"
+        aria-label="Close"
+      ></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column">
+      <!-- 移动端导航菜单 -->
+      <ul class="navbar-nav flex-grow-1">
+        <!-- 首页 -->
+        <li class="nav-item mb-2">
+          <router-link 
+            class="nav-link" 
+            to="/" 
+            active-class="active" 
+            exact-active-class="active"
+            @click="closeSidebar"
+          >
+            首页
+          </router-link>
+        </li>
+
+        <!-- 分类菜单 -->
+        <li class="nav-item mb-2">
+          <a 
+            class="nav-link d-flex justify-content-between align-items-center" 
+            href="javascript:;" 
+            @click="toggleCategoryDropdown"
+          >
+            分类
+            <i :class="categoryDropdownOpen ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
+          </a>
+          <!-- 分类子菜单 -->
+          <ul class="navbar-nav ms-3 mt-2" v-show="categoryDropdownOpen">
+            <li v-for="category in categories" :key="category.id" class="nav-item mb-1">
+              <router-link 
+                class="nav-link" 
+                :to="`/category/${category.key}`"
+                @click="closeSidebar"
+              >
+                {{ category.name }}
+              </router-link>
+            </li>
+            <li v-if="categories.length === 0" class="nav-item text-muted small">
+              暂无分类数据
+            </li>
+          </ul>
+        </li>
+
+        <!-- 动态导航项 -->
+        <li v-for="item in navItems" :key="item.key" class="nav-item mb-2">
+          <router-link 
+            class="nav-link" 
+            :to="`/${item.key}`" 
+            active-class="active" 
+            exact-active-class="active"
+            @click="closeSidebar"
+          >
+            {{ item.title }}
+          </router-link>
+        </li>
+      </ul>
+
+      <!-- 移动端功能按钮组 -->
+      <div class="mt-auto pt-3 border-top d-flex gap-2">
+        <button class="btn btn-outline-secondary flex-grow-1" type="button"><i class="bi bi-search me-1"></i>搜索</button>
+        <button 
+          class="btn btn-outline-secondary flex-grow-1" 
+          type="button" 
+          @click="toggleDarkMode"
+        >
+          <i :class="[darkModeIcon, 'me-1']"></i>{{ isDarkMode ? '浅色' : '深色' }}
+        </button>
+        <button class="btn btn-outline-secondary flex-grow-1" type="button"><i class="bi bi-person-circle me-1"></i>我的</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 侧边栏遮罩层 -->
+  <div 
+    v-if="sidebarOpen"
+    class="sidebar-backdrop"
+    @click="closeSidebar"
+  ></div>
 </template>
 
 <script setup>
@@ -74,6 +172,10 @@ const navItems = ref([]);
 const categories = ref([]);
 // 深色模式状态
 const isDarkMode = ref(false);
+// 侧边栏状态
+const sidebarOpen = ref(false);
+// 分类下拉菜单状态（移动端）
+const categoryDropdownOpen = ref(false);
 
 // 计算图标类名
 const darkModeIcon = computed(() => {
@@ -115,7 +217,7 @@ const initTheme = () => {
   console.log(`初始化${isDarkMode.value ? '深色' : '浅色'}模式`);
 };
 
-// 监听系统主题变化（可选）
+// 监听系统主题变化
 const setupSystemThemeListener = () => {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   
@@ -136,6 +238,34 @@ const setupSystemThemeListener = () => {
   return () => mediaQuery.removeEventListener('change', handleThemeChange);
 };
 
+// 切换移动端侧边栏
+const toggleSidebar = () => {
+  sidebarOpen.value = !sidebarOpen.value;
+  const sidebar = document.getElementById('mobileSidebar');
+  if (sidebarOpen.value) {
+    sidebar.classList.add('show');
+    document.body.classList.add('sidebar-open');
+  } else {
+    sidebar.classList.remove('show');
+    document.body.classList.remove('sidebar-open');
+  }
+};
+
+// 关闭侧边栏
+const closeSidebar = () => {
+  sidebarOpen.value = false;
+  const sidebar = document.getElementById('mobileSidebar');
+  sidebar.classList.remove('show');
+  document.body.classList.remove('sidebar-open');
+  // 同时关闭分类下拉
+  categoryDropdownOpen.value = false;
+};
+
+// 切换移动端分类下拉
+const toggleCategoryDropdown = () => {
+  categoryDropdownOpen.value = !categoryDropdownOpen.value;
+};
+
 // 从API获取导航数据
 const fetchNavData = async () => {
   try {
@@ -146,11 +276,9 @@ const fetchNavData = async () => {
       }
     });
     
-    // 检查API返回的数据结构
     if (response.data && Array.isArray(response.data)) {
       navItems.value = response.data;
     } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-      // 处理常见的API响应格式：{ data: [...] }
       navItems.value = response.data.data;
     } else {
       navItems.value = [];
@@ -170,14 +298,11 @@ const fetchCategories = async () => {
       }
     });
     
-    // 检查API返回的数据结构
     if (response.data && response.data.code === 200 && response.data.data && response.data.data.data) {
-      // 处理API返回的数据结构：{ code: 200, data: { data: [...] } }
       categories.value = response.data.data.data;
     } else if (response.data && Array.isArray(response.data)) {
       categories.value = response.data;
     } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-      // 处理常见的API响应格式：{ data: [...] }
       categories.value = response.data.data;
     } else {
       categories.value = [];
@@ -188,34 +313,106 @@ const fetchCategories = async () => {
   }
 };
 
-// 组件挂载时获取数据并初始化主题
+// 组件挂载时获取数据并初始化
 onMounted(() => {
   fetchNavData();
   fetchCategories();
   initTheme();
   setupSystemThemeListener();
+  
+  // 监听窗口大小变化，自动关闭侧边栏
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 992) {
+      closeSidebar();
+    }
+  });
 });
 </script>
 
 <style scoped>
-/* 自定义激活样式 */
+/* 基础样式 */
 :deep(.nav-link.active) {
   color: #0077ff !important;
   font-weight: 500;
 }
 
-/* 主题切换按钮悬停效果 */
-.btn-outline-secondary:hover {
-  background-color: var(--bs-secondary-bg-subtle);
-  border-color: var(--bs-secondary-border-subtle);
+/* 移动端侧边栏样式 */
+:deep(.sidebar) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100vh;
+  z-index: 1050;
+  background-color: var(--bs-body-bg);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+  border-right: 1px solid var(--bs-border-color);
 }
 
-/* 确保下拉菜单在不同主题下都有正确的样式 */
-.dropdown-menu {
+:deep(.sidebar.show) {
+  transform: translateX(0);
+}
+
+:deep(.sidebar-backdrop) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  backdrop-filter: blur(2px);
+}
+
+/* 防止页面滚动 */
+:deep(.sidebar-open) {
+  overflow: hidden;
+}
+
+/* 移动端按钮样式 */
+:deep(.offcanvas-header) {
+  padding: 1rem 1.5rem;
+}
+
+:deep(.offcanvas-body) {
+  padding: 1.5rem;
+}
+
+/* 导航项样式优化 */
+:deep(.navbar-nav .nav-item .nav-link) {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s ease;
+}
+
+:deep(.navbar-nav .nav-item .nav-link:hover) {
+  background-color: var(--bs-secondary-bg-subtle);
+}
+
+/* 适配不同主题 */
+:deep(.dropdown-menu) {
   background-color: var(--bs-dropdown-bg);
 }
 
-.dropdown-item:hover {
+:deep(.dropdown-item:hover) {
   background-color: var(--bs-dropdown-link-hover-bg);
+}
+
+/* 响应式调整 */
+@media (max-width: 991.98px) {
+  :deep(.navbar) {
+    padding: 0.5rem 1rem;
+  }
+}
+
+@media (min-width: 992px) {
+  :deep(.sidebar) {
+    display: none !important;
+  }
+  :deep(.sidebar-backdrop) {
+    display: none !important;
+  }
 }
 </style>
