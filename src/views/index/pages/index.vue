@@ -177,15 +177,17 @@ const formatTime = (timestamp) => {
 }
 
 const getCoverImg = (article) => {
+  // 优先使用文章自身封面
   if (article.covers && article.covers.trim() !== '') {
     return article.covers
   }
   const randomNum = Math.floor(Math.random() * 1000000)
   const apiParams = new URLSearchParams({
-    id: `${article.id}-${randomNum}`,
+    id: `${article.id}-${randomNum}`, // 避免重复的随机ID
     size: '300x200',
     mode: 'fit',
-    redirect: false
+    redirect: false,
+    name: 'fm' // 指定目录：枚举值（imgs.txt/外链图片/avatar）
   })
   return `/api/file/rand?${apiParams.toString()}`
 }

@@ -1,6 +1,6 @@
 <!-- src/comps/CommentList.vue 评论通用组件 -->
 <template>
-  <div class="card shadow-sm border-0 rounded-3 mt-4">
+  <div class="card shadow-sm border-0 rounded-3">
     <!-- 评论区标题：接收props的评论数，动态展示 -->
     <div class="card-header border-0">
       <h3 class="h5 fw-bold mt-2">
@@ -9,7 +9,7 @@
       </h3>
     </div>
     <div class="card-body">
-      <!-- 评论输入框：触发父组件的发布评论事件，传递输入内容 -->
+      <!-- 评论输入框：触发父组件的发布评论事件，传递输入内容 
       <div class="mb-5">
         <textarea 
           v-model="commentInput"
@@ -24,7 +24,7 @@
         >
           发布评论
         </button>
-      </div>
+      </div>-->
 
       <!-- 评论列表：接收props的评论数据，无数据时展示提示 -->
       <div class="comments-list" v-if="commentList.length > 0">

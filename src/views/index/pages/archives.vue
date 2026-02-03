@@ -51,7 +51,7 @@
       </main>
 
       <!-- 评论组件：优化间距，自然衔接 -->
-      <section class="article-comment mt-5 mb-8">
+      <section class="article-comment mt-2 mb-8">
         <CommentList
           :article-id="props.id"
           :comment-count="articleInfo.result?.comment?.count || 0"

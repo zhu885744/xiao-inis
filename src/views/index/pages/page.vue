@@ -42,7 +42,7 @@ import request from '@/utils/request'
 import iMarkdown from '@/comps/custom/i-markdown.vue'
 
 // 🌟 新增：获取环境变量中的网站标题，加兜底值，和文章详情页保持一致
-const SITE_TITLE = import.meta.env.VITE_TITLE || '不语的技术小站'
+const SITE_TITLE = import.meta.env.VITE_TITLE || '朱某的生活印记'
 
 // 🌟 核心：接收路由props传递的key（路由/:key开启了props: true）
 // 独立页面路由是/:key，所以props接收的参数是key（如about/links等）
