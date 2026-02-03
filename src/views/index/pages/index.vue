@@ -1,17 +1,10 @@
 <template>
-  <!-- 公告卡片 - 单独抽离，样式微调 -->
-  <div class="card article-announce-card mt-2 shadow-sm">
-    <div class="card-body d-flex align-items-center">
+  <!-- 公告卡片 - 保留，适配3列布局整体风格 -->
+  <div class="card article-announce-card mt-2 mb-3 shadow-sm">
+    <div class="card-body d-flex align-items-center py-2 px-3">
       <span class="badge text-bg-danger me-2"><i class="bi bi-megaphone"></i></span>
-      <span class="fw-medium">新系统启用公告<a href="https://blog.zhuxu.asia/archives/182/" class="text-decoration-none">[点击查看]</a></span>
-      <span class="ms-auto text-muted small">2026-2-2</span>
-    </div>
-  </div>
-  <div class="card article-announce-card mt-2 shadow-sm">
-    <div class="card-body d-flex align-items-center">
-      <span class="badge text-bg-danger me-2"><i class="bi bi-megaphone"></i></span>
-      <span class="fw-medium">本站正在快马加鞭赶制中，预计在3月初正式上线！</span>
-      <span class="ms-auto text-muted small">2026-2-2</span>
+      <span class="fw-medium fs-7">新系统启用公告<a href="https://blog.zhuxu.asia/archives/182/" class="text-decoration-none">[点击查看]</a></span>
+      <span class="ms-auto text-muted x-small">2026-2-2</span>
     </div>
   </div>
 
@@ -23,266 +16,316 @@
   </div>
 
   <!-- 空数据状态 -->
-  <div v-else-if="articleList.length === 0 && !loading" class="alert alert-light text-center py-5 mt-2">
-    <i class="bi bi-file-earmark-text fs-3 mb-2"></i>
-    <p class="mb-0 text-muted">暂无文章数据</p>
+  <div v-else-if="articleList.length === 0 && !loading" class="alert alert-light text-center py-4 mt-2">
+    <i class="bi bi-file-earmark-text fs-4 mb-2"></i>
+    <p class="mb-0 text-muted fs-7">暂无文章数据</p>
   </div>
 
-  <!-- 文章列表 - Grid网格容器：一行3列，自适应响应式，统一间距 -->
-  <div v-else class="article-list-container mt-3 grid-article-list">
-    <!-- 遍历文章数据，key绑定唯一标识 -->
+  <!-- 文章列表 - 核心改：PC端固定3列Grid -->
+  <div v-else class="article-list-container mt-2 grid-article-list">
     <div 
       class="card article-item-card shadow-sm hover-shadow"
       v-for="article in articleList" 
       :key="article.id"
+      @click="toArticleDetail(article.id)" 
+      style="cursor: pointer;"
     >
       <div class="card-body p-0 d-flex flex-column h-100">
-        <!-- 文章封面图 - 小卡片专用，固定比例防止变形 -->
+        <!-- 文章封面 - 核心改：优先用自身covers，无则调用随机图API -->
         <div class="article-cover flex-shrink-0">
           <img 
-            :src="article.covers || `https://picsum.photos/400/300?random=${article.id}`" 
+            :src="getCoverImg(article)" 
             :alt="article.title" 
             class="article-cover-img w-100 h-100 object-cover"
+            loading="lazy"
           >
         </div>
-        <!-- 文章内容区 - 自适应高度，填充剩余空间 -->
-        <div class="article-content p-3 flex-grow-1 d-flex flex-column">
-          <!-- 文章标题 - 小卡片适配，字号缩小+1行省略 -->
-          <h3 class="article-title fw-bold mb-2 m-0">{{ article.title }}</h3>
+        <!-- 内容区 - 微调内边距，适配3列卡片 -->
+        <div class="article-content p-2 flex-grow-1 d-flex flex-column">
+          <!-- 文章标题 - 保留原有样式 -->
+          <h3 class="article-title fw-bold mb-1 m-0">{{ article.title }}</h3>
 
-          <!-- 文章摘要 - 小卡片适配，1行省略，更紧凑 -->
-          <p class="article-desc lh-base text-truncate-1 mt-auto mb-0">
+          <!-- 文章摘要 - 缩小与元信息的间距 -->
+          <p class="article-desc text-truncate-1 mt-auto mb-1">
             {{ article.abstract || '暂无摘要' }}
           </p>
 
-          <!-- 文章元信息 - 小卡片适配，字号缩小+间距精简 -->
-          <div class="card-text d-flex flex-wrap gap-2 align-items-center my-2">
-            <span class="meta-item">{{ article.result?.author?.nickname || '匿名' }}</span>
-            <span class="meta-item">{{ article.result?.group[0]?.name || '未分类' }}</span>
-            <span class="meta-item">{{ formatTime(article.create_time) }}</span>
+          <!-- 元信息左右分组布局 - 保留已有优化 -->
+          <div class="article-meta d-flex align-items-center w-100 m-0">
+            <div class="meta-left d-flex align-items-center gap-0.5">
+              <span class="meta-item"><i class="bi bi-folder-fill"></i>{{ article?.result?.group?.[0]?.name || '未分类' }}</span>
+            </div>
+            <div class="meta-right d-flex align-items-center gap-0.5 ms-auto">
+              <span class="meta-item"><i class="bi bi-calendar-fill"></i>{{ formatTime(article.create_time) }}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 加载更多按钮区域 -->
+  <!-- 加载更多 - 保留原有样式，适配3列布局间距 -->
   <div class="d-flex justify-content-center mt-4 mb-5">
-    <!-- 加载中状态 -->
     <button 
       v-if="loading && articleList.length > 0" 
-      class="btn btn-info disabled"
+      class="btn btn-info btn-sm disabled"
       disabled
     >
       <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
       加载中...
     </button>
-    <!-- 加载更多按钮（还有更多数据时显示） -->
     <button 
       v-else-if="hasMore" 
-      class="btn btn-primary"
+      class="btn btn-primary btn-sm"
       @click="loadMore"
     >
       加载更多
     </button>
-    <!-- 没有更多数据时显示 -->
     <button 
       v-else 
-      class="btn btn-outline-secondary disabled"
+      class="btn btn-outline-secondary btn-sm disabled"
       disabled
     >
-      已加载全部数据
+      已加载全部
     </button>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-// 引入封装好的request工具（注意路径和导出方式匹配）
+import { useRouter } from 'vue-router'
 import request from '@/utils/request' 
+const router = useRouter()
 
-// 响应式数据
-const articleList = ref([])    // 文章列表
-const loading = ref(false)     // 加载状态
-const currentPage = ref(1)     // 当前页码（内部使用，用户不可见）
-const limit = ref(6)           // 每页/每次加载条数
-const total = ref(0)           // 总条数
-const order = ref('create_time desc') // 排序方式
+// 所有JS逻辑完全保留，仅调整limit为6（3列*2行，加载更多更适配3列）
+const articleList = ref([])
+const loading = ref(false)
+const currentPage = ref(1)
+const limit = ref(6) // 3列布局推荐每页6条，视觉更整齐
+const total = ref(0)
+const order = ref('create_time desc')
 
-// 是否还有更多数据可加载
 const hasMore = computed(() => {
   return articleList.value.length < total.value
 })
 
-/**
- * 时间戳格式化
- * @param {number} timestamp - 时间戳（秒）
- * @returns {string} 格式化后的时间字符串
- */
+// 时间格式化 - 保留原有逻辑
 const formatTime = (timestamp) => {
   if (!timestamp || timestamp === 0) return '未知时间'
-  // 转换为毫秒（接口返回的是秒级时间戳）
   const date = new Date(timestamp * 1000)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-/**
- * 获取文章列表（内部通用方法）
- * @param {number} page - 页码
- * @param {boolean} isLoadMore - 是否为加载更多（true=拼接数据，false=重置数据）
- */
+// 🔥 核心新增：封装封面图获取方法，优先用自身covers，无则调用随机图API
+const getCoverImg = (article) => {
+  // 判断covers是否有效（非空字符串、非null、非undefined）
+  if (article.covers && article.covers.trim() !== '') {
+    return article.covers
+  }
+  // 无封面则拼接随机图API，参数：300x200（3:2比例）、fit等比缩放、文章id+随机数避免重复
+  const randomNum = Math.floor(Math.random() * 1000000) // 随机数
+  const apiParams = new URLSearchParams({
+    id: `${article.id}-${randomNum}`, // 文章id+随机数，双重避免重复
+    size: '300x200', // 匹配卡片3:2比例，防止图片变形
+    mode: 'fit', // 等比例缩放，默认值也显式写，保证一致性
+    redirect: false // 非重定向，直接返回图片地址
+  })
+  return `/api/file/rand?${apiParams.toString()}`
+}
+
+// 获取文章列表 - 保留原有逻辑
 const getArticleList = async (page = 1, isLoadMore = false) => {
   loading.value = true
   try {
-    // 构造请求参数
-    const params = {
-      page,
-      limit: limit.value,
-      order: order.value
-    }
-
-    // 请求文章列表接口
+    const params = { page, limit: limit.value, order: order.value }
     const res = await request.get('/api/article/all', params)
-
     if (res.code === 200) {
       const newData = res.data.data || []
       const totalCount = res.data.count || 0
-      
-      // 加载更多：拼接数据；首次加载：重置数据
-      if (isLoadMore) {
-        articleList.value = [...articleList.value, ...newData]
-      } else {
-        articleList.value = newData
-      }
-      
+      articleList.value = isLoadMore ? [...articleList.value, ...newData] : newData
       total.value = totalCount
       currentPage.value = page
     } else {
       console.error('获取文章列表失败：', res.msg)
-      // 加载更多时不清空已有数据，仅首次加载时清空
-      if (!isLoadMore) {
-        articleList.value = []
-      }
+      !isLoadMore && (articleList.value = [])
     }
   } catch (error) {
     console.error('获取文章列表接口异常：', error)
-    // 加载更多时不清空已有数据，仅首次加载时清空
-    if (!isLoadMore) {
-      articleList.value = []
-    }
+    !isLoadMore && (articleList.value = [])
   } finally {
     loading.value = false
   }
 }
 
-/**
- * 加载更多数据
- */
+// 跳转到文章详情 - 保留原有逻辑
+const toArticleDetail = (id) => {
+  router.push(`/archives/${id}`) 
+}
+
+// 加载更多 - 保留原有逻辑
 const loadMore = () => {
-  // 边界判断：没有更多数据或正在加载时，不执行
   if (!hasMore.value || loading.value) return
-  // 加载下一页数据，并拼接
   getArticleList(currentPage.value + 1, true)
 }
 
-// 页面挂载时加载第一页数据
+// 页面挂载 - 保留原有逻辑
 onMounted(() => {
   getArticleList(1, false)
 })
 </script>
 
 <style scoped>
-/* 公告卡片样式 - 保留 */
+/* 公告卡片基础样式 */
 .article-announce-card {
   border-left: 4px solid #0dcaf0;
+  border-radius: 0.375rem;
+  max-width: 1200px; /* 与文章列表容器同宽，视觉对齐 */
+  margin: 0.5rem auto 1rem;
+}
+.fs-7 {
+  font-size: 0.8rem;
+}
+.x-small {
+  font-size: 0.75rem;
 }
 
-/* 核心：Grid文章列表容器 - 一行3列，多断点自适应 */
+/* 🔥 核心修改：PC端固定3列Grid，居中容器+最大宽度限制 */
 .grid-article-list {
   display: grid;
-  /* 核心属性：一行3列，列宽自适应，间距1rem */
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  gap: 1rem; /* 卡片之间的间距（水平+垂直），比mb-3更统一 */
+  grid-template-columns: repeat(3, 1fr); /* 强制3列，一行仅显3个 */
+  gap: 1rem; /* 3列布局适配的间距，视觉更平衡 */
+  max-width: 1200px; /* 限制最大宽度，大屏不拉伸 */
+  margin: 0 auto; /* 容器居中，3列更美观 */
 }
 
-/* 文章卡片 - 小尺寸适配+高度统一+hover动效优化 */
+/* 文章卡片 - 保留原有优化，微调基础尺寸 */
 .article-item-card {
-  height: 100%; /* 关键：让Grid中卡片高度统一，避免错落 */
-  border: 1px solid #f1f3f5; /* 轻边框，小卡片更精致 */
-  transition: all 0.3s ease; /* 统一过渡动效 */
+  height: 100%; /* Grid等高，避免错落 */
+  border: 1px solid #f5f7fa;
+  border-radius: 0.5rem;
+  transition: all 0.25s ease;
+  overflow: hidden;
+  min-width: 200px; /* 最小宽度，防止3列下卡片过窄 */
 }
+/* hover动效 - 保留柔和阴影，不夸张 */
 .hover-shadow:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06) !important;
   transform: translateY(-3px);
-  border-color: transparent; /* hover时隐藏边框，阴影更自然 */
+  border-color: transparent;
 }
 
-/* 小卡片封面 - 固定比例(3:2)，所有卡片图片尺寸统一，不拉伸 */
+/* 封面 - 保留3:2比例，圆角适配卡片 */
 .article-cover {
   width: 100%;
-  padding-top: 66.67%; /* 3:2比例（高度=宽度*66.67%），比固定高度更适配小卡片 */
+  padding-top: 66.67%; /* 3:2黄金比例，图片不变形 */
   position: relative;
 }
 .article-cover-img {
   position: absolute;
   top: 0;
   left: 0;
-  border-top-left-radius: calc(0.375rem - 1px);
-  border-top-right-radius: calc(0.375rem - 1px);
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
 }
 
-/* 文章标题 - 小卡片适配：字号缩小+1行省略+行高优化 */
-.article-title {
-  font-size: clamp(0.95rem, 1vw, 1.1rem); /* 小屏稍大，大屏稍小 */
-  line-height: 1.5;
-  /* 1行溢出省略 */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 文章元信息 - 小卡片适配：字号缩小+竖线精简+间距优化 */
-.article-meta {
-  font-size: 0.8rem;
-  margin-bottom: 0.5rem !important;
-}
-.article-meta .meta-item {
-  position: relative;
-  padding-left: 0.5rem; /* 竖线和文字间距缩小，更紧凑 */
-}
-.article-meta .meta-item:not(:first-child)::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1px;
-  height: 0.75rem; /* 竖线高度缩短，适配小字号 */
-  background-color: currentColor;
-  opacity: 0.6; /* 竖线更浅，不突兀 */
-}
-
-/* 摘要1行溢出省略 - 小卡片专用 */
-.text-truncate-1 {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #6c757d;
-  font-size: 0.85rem;
-  line-height: 1.6;
-}
-
-/* 内容区 - 小卡片适配：弹性布局，摘要靠下，内容更整齐 */
+/* 内容区 - 弹性布局，元信息贴底 */
 .article-content {
   height: 100%;
 }
 
-/* 加载更多按钮样式优化 */
-.btn-outline-info {
-  --bs-btn-color: #0dcaf0;
-  --bs-btn-border-color: #0dcaf0;
-  --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #0dcaf0;
-  --bs-btn-hover-border-color: #0dcaf0;
+/* 标题 - 微调字号，适配3列小卡片 */
+.article-title {
+  font-size: clamp(0.9rem, 1.2vw, 1rem);
+  line-height: 1.4;
+  color: #212529;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 摘要 - 保留精简样式 */
+.article-desc {
+  font-size: 0.75rem;
+  color: #6c757d;
+  line-height: 1.5;
+  margin: 0;
+}
+.text-truncate-1 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 元信息 - 保留已有分组优化，微调字号更清晰 */
+.article-meta {
+  font-size: 0.7rem;
+  color: #868e96;
+  line-height: 1.2;
+}
+.meta-left, .meta-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+/* 移除单元素的冗余竖线样式（因现在元信息左右都只有1个项） */
+.meta-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  padding-left: 0 !important; /* 单元素无需左内边距 */
+}
+/* 元信息图标 - 优化间距，更协调 */
+.meta-item .bi {
+  font-size: 0.9em;
+  margin-right: 0.2rem;
+  line-height: 1;
+  vertical-align: middle;
+  color: #9ca3af;
+}
+
+/* 🔥 响应式核心：不同屏幕适配列数，避免拥挤 */
+/* 平板端（768px以下）：改为2列，适配平板宽度 */
+@media (max-width: 768px) {
+  .grid-article-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+    padding: 0 0.5rem;
+  }
+  .article-item-card {
+    min-width: 160px;
+  }
+  .article-content {
+    padding: 1.5px;
+  }
+}
+
+/* 手机端（576px以下）：改为1列，全屏显示，阅读更舒适 */
+@media (max-width: 576px) {
+  .grid-article-list {
+    grid-template-columns: 1fr; /* 单列 */
+    gap: 0.6rem;
+    padding: 0 0.8rem;
+  }
+  .article-item-card {
+    min-width: unset;
+  }
+  .hover-shadow:hover {
+    transform: translateY(-1px); /* 移动端hover动效更轻微 */
+  }
+  .article-title {
+    font-size: 1rem;
+  }
+  .article-meta {
+    font-size: 0.75rem;
+  }
+}
+
+/* 超大屏（1400px以上）：微调间距，避免卡片过宽 */
+@media (min-width: 1400px) {
+  .grid-article-list {
+    max-width: 1300px;
+    gap: 1.2rem;
+  }
 }
 </style>

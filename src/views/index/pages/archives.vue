@@ -1,189 +1,348 @@
 <template>
-    <!-- 文章卡片 -->
-    <div class="card shadow-sm border-0 rounded-3 mt-2">
-      <!-- 文章头部信息 -->
-      <div class="card-header border-0 pb-3">
-        <span class="card-title fs-2 mb-3">Vue 入门到实战：从基础到项目开发</span>
-        
-        <!-- 文章元信息 -->
-        <div class="d-flex flex-wrap align-items-center text-muted mb-2">
-          <span class="me-4">
-            <i class="bi bi-person-fill me-1"></i>
-            不语
-          </span>
-          <span class="me-4">
-            <i class="bi bi-folder-fill me-1"></i>
-            网络
-          </span>
-          <span class="me-4">
-            <i class="bi bi-calendar-fill me-1"></i>
-            2024-05-20
-          </span>
-          <span class="me-4">
-            <i class="bi bi-eye-fill me-1"></i>
-            1258 浏览
-          </span>
-          <span>
-            <i class="bi bi-chat-fill me-1"></i>
-            36 评论
-          </span>
-        </div>
-      </div>
-
-      <!-- 文章内容 -->
-      <div class="card-body">
-        <div class="article-content text-secondary">
-          <p class="lead mb-4">
-            Vue 是一套用于构建用户界面的渐进式框架，与其它大型框架不同的是，Vue 被设计为可以自底向上逐层应用...
-          </p>
-          <p class="mb-3">
-            本教程将从 Vue 的基础语法开始，逐步讲解组件化开发、路由配置、状态管理等核心知识点，最后通过一个实战项目帮助你巩固所学内容...
-          </p>
-          <p class="mb-3">
-            学习 Vue 前建议具备 HTML、CSS、JavaScript 基础，本教程适合前端初学者和想要提升 Vue 开发能力的开发者...
-          </p>
-          <!-- 占位内容 -->
-          <div class="mb-4">
-            <img 
-              src="https://picsum.photos/1200/400" 
-              class="img-fluid rounded-2 w-100" 
-              alt="文章配图"
-            >
-          </div>
-          <p>
-            更多详细内容请关注后续章节，我们将带你从零搭建一个完整的 Vue 项目，掌握实际开发中的常用技巧和最佳实践...
-          </p>
-        </div>
+  <!-- 全局外层容器：居中、收窄宽度、统一留白 -->
+  <div class="article-page-wrapper">
+    <!-- 加载状态：优化尺寸、间距，更协调 -->
+    <div v-if="loading" class="page-loading">
+      <div class="spinner-border text-info fs-4" role="status">
+        <span class="visually-hidden">Loading...</span>
       </div>
     </div>
 
-    <!-- 评论区 -->
-    <div class="card shadow-sm border-0 rounded-3 mt-2">
-      <div class="card-header bg-white border-0 pb-3">
-        <h3 class="h5 fw-bold mt-2">
-          <i class="bi bi-chat-dots me-2"></i>
-          评论 (36)
-        </h3>
-      </div>
-      <div class="card-body">
-        <!-- 评论输入框 -->
-        <div class="mb-5">
-          <textarea 
-            class="form-control rounded-2 border border-secondary-subtle" 
-            rows="3" 
-            placeholder="请输入你的评论..."
-          ></textarea>
-          <button class="btn btn-primary mt-3 px-4">发布评论</button>
-        </div>
-
-        <!-- 评论列表 -->
-        <div class="comments-list">
-          <!-- 评论项1 -->
-          <div class="comment-item pb-4 mb-4 border-bottom">
-            <div class="d-flex align-items-start mb-3">
-              <img 
-                src="https://picsum.photos/60/60" 
-                class="avatar rounded-circle me-3" 
-                alt="用户头像"
-              >
-              <div class="flex-grow-1">
-                <h6 class="fw-semibold mb-1">张三</h6>
-                <small class="text-muted">2024-05-21 10:20</small>
-              </div>
-            </div>
-            <p class="text-secondary mb-2">教程写得非常详细，对新手很友好，感谢作者的分享！</p>
-            <button class="btn btn-sm btn-outline-primary">回复</button>
-          </div>
-
-          <!-- 评论项2 -->
-          <div class="comment-item pb-4 mb-4 border-bottom">
-            <div class="d-flex align-items-start mb-3">
-              <img 
-                src="https://picsum.photos/61/61" 
-                class="avatar rounded-circle me-3" 
-                alt="用户头像"
-              >
-              <div class="flex-grow-1">
-                <h6 class="fw-semibold mb-1">李四</h6>
-                <small class="text-muted">2024-05-21 14:35</small>
-              </div>
-            </div>
-            <p class="text-secondary mb-2">请问作者，Vue3 的组合式 API 和选项式 API 哪个更适合新项目？</p>
-            <button class="btn btn-sm btn-outline-primary">回复</button>
-
-            <!-- 评论回复 -->
-            <div class="ms-5 mt-3 pt-3 border-top">
-              <div class="d-flex align-items-start mb-3">
-                <img 
-                  src="https://picsum.photos/62/62" 
-                  class="avatar rounded-circle me-3" 
-                  alt="作者头像"
-                >
-                <div class="flex-grow-1">
-                  <h6 class="fw-semibold mb-1">前端开发狮 <span class="badge bg-primary text-white">作者</span></h6>
-                  <small class="text-muted">2024-05-21 15:10</small>
-                </div>
-              </div>
-              <p class="text-secondary mb-2">推荐新项目使用组合式 API，更适合大型项目的代码组织和复用～</p>
-              <button class="btn btn-sm btn-outline-primary">回复</button>
-            </div>
-          </div>
-
-          <!-- 评论项3 -->
-          <div class="comment-item">
-            <div class="d-flex align-items-start mb-3">
-              <img 
-                src="https://picsum.photos/63/63" 
-                class="avatar rounded-circle me-3" 
-                alt="用户头像"
-              >
-              <div class="flex-grow-1">
-                <h6 class="fw-semibold mb-1">王五</h6>
-                <small class="text-muted">2024-05-22 09:15</small>
-              </div>
-            </div>
-            <p class="text-secondary mb-2">跟着教程做了一遍，成功搭建了第一个 Vue 项目，太有成就感了！</p>
-            <button class="btn btn-sm btn-outline-primary">回复</button>
-          </div>
-        </div>
-      </div>
+    <!-- 错误状态：重写样式，与整体风格统一 -->
+    <div v-else-if="error" class="page-error alert alert-danger d-flex align-items-center justify-content-center gap-3 p-4 rounded-4 shadow-sm">
+      <i class="bi bi-exclamation-circle-fill fs-2 text-danger"></i>
+      <p class="mb-0 fw-normal">{{ errorMsg }}</p>
     </div>
+
+    <!-- 文章主体：核心UI重写 -->
+    <div v-else class="article-main">
+      <!-- 文章内容区：核心阅读区，重写样式 -->
+      <main class="article-content-wrap card border-0 shadow-sm p-3 mt-2">
+        <!-- 文章头部：标题+元信息 -->
+      <header class="article-header mt-2">
+        <h1 class="article-title text-center fw-bold mb-3">{{ articleInfo.title }}</h1>
+        <!-- 文章元信息：居中布局、弱化样式 -->
+        <div class="article-meta d-flex flex-wrap justify-content-center align-items-center text-muted gap-4 fs-6">
+          <span class="meta-item d-flex align-items-center">
+            <i class="bi bi-person-fill me-2"></i>
+            {{ articleInfo.result?.author?.nickname || '匿名' }}
+          </span>
+          <span class="meta-item d-flex align-items-center">
+            <i class="bi bi-folder-fill me-2"></i>
+            {{ articleInfo.result?.group[0]?.name || '未分类' }}
+          </span>
+          <span class="meta-item d-flex align-items-center">
+            <i class="bi bi-calendar-fill me-2"></i>
+            {{ formatTime(articleInfo.create_time) }}
+          </span>
+          <span class="meta-item d-flex align-items-center">
+            <i class="bi bi-eye-fill me-2"></i>
+            {{ articleInfo.views || 0 }} 浏览
+          </span>
+          <span class="meta-item d-flex align-items-center">
+            <i class="bi bi-chat-fill me-2"></i>
+            {{ articleInfo.result?.comment?.count || 0 }} 评论
+          </span>
+        </div>
+      </header>
+        <div class="article-content mt-4">
+          <i-markdown :model-value="articleInfo.content || '暂无文章内容，敬请期待～'" />
+        </div>
+      </main>
+
+      <!-- 评论组件：优化间距，自然衔接 -->
+      <section class="article-comment mt-5 mb-8">
+        <CommentList
+          :article-id="props.id"
+          :comment-count="articleInfo.result?.comment?.count || 0"
+          :comment-list="staticCommentList"
+          @publish-comment="handlePublishComment"
+          @reply-comment="handleReplyComment"
+        />
+      </section>
+    </div>
+  </div>
 </template>
 
 <script setup>
-// 仅UI展示，无业务逻辑
+import { ref, onMounted, defineProps, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import request from '@/utils/request'
+import iMarkdown from '@/comps/custom/i-markdown.vue'
+import CommentList from '@/comps/custom/i-comment.vue'
+
+// 环境变量网站标题，兜底处理
+const SITE_TITLE = import.meta.env.VITE_TITLE || '朱某的生活印记'
+
+// 接收路由传递的文章ID
+const props = defineProps({
+  id: {
+    type: [String, Number],
+    required: true
+  }
+})
+
+// 响应式状态：保留所有原有业务逻辑
+const loading = ref(true)
+const error = ref(false)
+const errorMsg = ref('')
+const articleInfo = ref({})
+const pageTitle = ref(`加载中... - ${SITE_TITLE}`)
+// 补全评论列表空值，防止组件报错
+const staticCommentList = ref([])
+
+// 路由实例
+const router = useRouter()
+
+// 监听页面标题，更新浏览器标签
+watch(
+  pageTitle,
+  (newTitle) => {
+    document.title = newTitle
+  },
+  { immediate: true }
+)
+
+/**
+ * 时间格式化：复用原有逻辑
+ */
+const formatTime = (timestamp) => {
+  if (!timestamp || timestamp === 0) return '未知时间'
+  const date = new Date(timestamp * 1000)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * 文章ID合法性校验：复用原有逻辑
+ */
+const checkArticleId = (id) => {
+  const idVal = String(id).trim()
+  if (!idVal) {
+    errorMsg.value = '文章ID不能为空，请检查访问地址'
+    return false
+  }
+  const numId = Number(idVal)
+  if (isNaN(numId) || numId <= 0) {
+    errorMsg.value = '文章ID不合法，必须为正整数'
+    return false
+  }
+  return true
+}
+
+/**
+ * 请求文章详情：复用原有逻辑
+ */
+const getArticleDetail = async (id) => {
+  loading.value = true
+  try {
+    const queryParams = { id, cache: false }
+    const res = await request.get('/api/article/one', queryParams)
+
+    if (res.code === 200) {
+      if (!res.data || Object.keys(res.data).length === 0) {
+        error.value = true
+        errorMsg.value = '未找到该文章，可能已被删除或ID错误'
+        pageTitle.value = `文章不存在 - ${SITE_TITLE}`
+      } else {
+        articleInfo.value = res.data
+        error.value = false
+        pageTitle.value = `${articleInfo.value.title} - ${SITE_TITLE}`
+      }
+    } else {
+      error.value = true
+      errorMsg.value = res.msg || '获取文章详情失败'
+      pageTitle.value = `获取文章失败 - ${SITE_TITLE}`
+    }
+  } catch (err) {
+    error.value = true
+    errorMsg.value = '网络异常，请检查网络后刷新页面'
+    console.error('[文章详情接口异常]：', err)
+    pageTitle.value = `网络异常 - ${SITE_TITLE}`
+  } finally {
+    loading.value = false
+  }
+}
+
+// 补全评论回调方法，防止组件触发报错
+const handlePublishComment = (comment) => {
+  console.log('发布评论：', comment)
+  // 后续可补充实际提交逻辑
+}
+const handleReplyComment = (reply, parentId) => {
+  console.log('回复评论：', reply, '父评论ID：', parentId)
+  // 后续可补充实际回复逻辑
+}
+
+// 页面挂载执行核心逻辑
+onMounted(() => {
+  if (checkArticleId(props.id)) {
+    getArticleDetail(Number(props.id))
+  } else {
+    error.value = true
+    loading.value = false
+    pageTitle.value = `文章ID不合法 - ${SITE_TITLE}`
+    setTimeout(() => router.go(-1), 3000)
+  }
+})
 </script>
 
 <style scoped>
-/* 自定义简约样式 */
+/* 加载状态：居中、占满视口高度 */
+.page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+/* 文章标题：响应式字号、优化行高、居中 */
+.article-title {
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  line-height: 1.3;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+/* 文章元信息：弱化样式、统一图标 */
+.article-meta {
+  font-size: 0.9rem;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+.article-meta .meta-item {
+  white-space: nowrap;
+}
+.article-meta .bi {
+  font-size: 1em;
+  color: #9ca3af;
+}
+
+/* 文章内容区：核心阅读样式优化 */
 .article-content {
   line-height: 1.8;
-  font-size: 1rem;
+  color: #374151;
+  font-size: 1.05rem;
 }
 
-.avatar {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
+/* 适配Markdown渲染的内部样式（核心：保证阅读体验） */
+.article-content :deep(p) {
+  margin-bottom: 1.2rem;
+  text-align: justify;
+}
+.article-content :deep(h2),
+.article-content :deep(h3),
+.article-content :deep(h4) {
+  margin: 1.8rem 0 0.8rem;
+  color: #1f2937;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.article-content :deep(h2) {
+  font-size: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+.article-content :deep(h3) {
+  font-size: 1.25rem;
+}
+.article-content :deep(img) {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  margin: 1.5rem auto;
+  display: block;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+.article-content :deep(pre) {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+}
+.article-content :deep(code) {
+  background-color: #f3f4f6;
+  padding: 0.15rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.95em;
+}
+.article-content :deep(ul),
+.article-content :deep(ol) {
+  margin-bottom: 1.2rem;
+  padding-left: 1.8rem;
+}
+.article-content :deep(li) {
+  margin-bottom: 0.5rem;
+}
+.article-content :deep(a) {
+  color: #2563eb;
+  text-decoration: none;
+}
+.article-content :deep(a:hover) {
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+.article-content :deep(blockquote) {
+  border-left: 4px solid #d1d5db;
+  padding: 0.5rem 1rem;
+  background-color: #f9fafb;
+  margin-bottom: 1.2rem;
+  color: #4b5563;
+}
+.article-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.2rem;
+}
+.article-content :deep(td),
+.article-content :deep(th) {
+  border: 1px solid #e5e7eb;
+  padding: 0.7rem;
+  text-align: left;
+}
+.article-content :deep(th) {
+  background-color: #f9fafb;
+  font-weight: 600;
 }
 
-.comment-item {
-  transition: all 0.2s ease;
+/* 评论区容器：基础间距 */
+.article-comment {
+  width: 100%;
 }
 
-.comment-item:hover {
-  background-color: rgba(0, 0, 0, 0.01);
-}
-
-/* 适配移动端 */
+/* 移动端响应式适配（768px以下） */
 @media (max-width: 768px) {
-  .card-header h1 {
-    font-size: 1.5rem;
+  .article-page-wrapper {
+    padding: 1.5rem 0.8rem;
   }
-  
-  .article-meta span {
-    display: block;
-    margin-bottom: 0.5rem;
+  .article-content-wrap {
+    padding: 2rem 1.2rem !important;
+  }
+  .article-meta {
+    gap: 2rem !important;
+    font-size: 0.85rem;
+  }
+  .article-content {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+}
+
+/* 超小屏适配（576px以下） */
+@media (max-width: 576px) {
+  .article-page-wrapper {
+    padding: 1rem 0.5rem;
+  }
+  .article-content-wrap {
+    padding: 1.5rem 0.8rem !important;
+  }
+  .article-meta {
+    gap: 1.5rem !important;
+    justify-content: flex-start !important;
+  }
+  .article-title {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    text-align: left;
   }
 }
 </style>

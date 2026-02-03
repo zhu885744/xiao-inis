@@ -1,22 +1,45 @@
+<!-- src\comps\custom\i-markdown.vue -->
 <template>
-    <span v-html="state.md.render(props.modelValue)"></span>
+  <span v-html="renderedMd"></span>
 </template>
 
 <script setup>
-import MarkdownIt from 'markdown-it'
+import { ref, watch, defineProps } from 'vue'
+// 导入marked核心渲染方法（v17+ 直接导入marked即可）
+import { marked } from 'marked'
 
+// 保留原有props规范，无需修改
 const props = defineProps({
-    modelValue: {
-        type: String,
-        default: '',
-    },
+  modelValue: {
+    type: String,
+    default: '',
+  },
 })
-const state = reactive({
-    md: new MarkdownIt({
-        html: true,
-    }),
-})
-watch(() => props.modelValue, () => {
-    state.md.render(props.modelValue)
-})
+
+// 存储渲染后的HTML结果
+const renderedMd = ref('')
+
+// 初始化渲染方法
+const renderMarkdown = (content) => {
+  if (!content) {
+    renderedMd.value = ''
+    return
+  }
+  // marked直接渲染Markdown为HTML，开启HTML解析（适配文章中的HTML标签）
+  renderedMd.value = marked.parse(content, {
+    gfm: true, // 开启GitHub风格的Markdown
+    breaks: true, // 换行符转换为<br>
+    html: true, // 允许解析内容中的HTML标签（关键，和你原有需求一致）
+  })
+}
+
+// 首次加载立即渲染
+renderMarkdown(props.modelValue)
+
+// 监听内容变化，重新渲染（适配文章数据加载后的更新）
+watch(
+  () => props.modelValue,
+  (newVal) => renderMarkdown(newVal),
+  { immediate: true, deep: false }
+)
 </script>
