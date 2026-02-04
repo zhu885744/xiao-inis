@@ -114,7 +114,7 @@
   <div class="d-flex justify-content-center mt-4 mb-5">
     <button 
       v-if="loading && articleList.length > 0" 
-      class="btn btn-info btn-sm disabled"
+      class="btn btn-info btn-lg disabled"
       disabled
     >
       <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -122,14 +122,14 @@
     </button>
     <button 
       v-else-if="hasMore" 
-      class="btn btn-primary btn-sm"
+      class="btn btn-primary btn-lg"
       @click="loadMore"
     >
       加载更多
     </button>
     <button 
       v-else 
-      class="btn btn-outline-secondary btn-sm disabled"
+      class="btn btn-outline-secondary btn-lg disabled"
       disabled
     >
       已加载全部
@@ -308,7 +308,6 @@ img:hover {
 .article-title {
   font-size: clamp(0.9rem, 1.2vw, 1rem);
   line-height: 1.4;
-  color: #212529;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

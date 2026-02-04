@@ -1,71 +1,62 @@
 <template>
-  <div>
-    <!-- 加载状态：和首页/文章详情页样式统一 -->
-    <div v-if="loading" class="d-flex justify-content-center align-items-center py-10">
-      <div class="spinner-border text-info" role="status">
+  <div class="page-wrapper">
+    <!-- 加载状态：复用文章页样式 -->
+    <div v-if="loading" class="page-loading">
+      <div class="spinner-border text-info fs-4" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
     </div>
 
-    <!-- 错误/空数据状态：Bootstrap原生alert，统一项目提示风格 -->
-    <div v-else-if="error" class="alert alert-danger d-flex align-items-center mt-2" role="alert">
-      <i class="bi bi-exclamation-circle-fill fs-3 me-2"></i>
-      <p class="mb-0 flex-grow-1">{{ errorMsg }}</p>
+    <!-- 错误状态：复用文章页样式 -->
+    <div v-else-if="error" class="page-error alert alert-danger d-flex align-items-center justify-content-center gap-3 mt-2 shadow-sm">
+      <i class="bi bi-exclamation-circle-fill fs-2 text-danger"></i>
+      <p class="mb-0 fw-normal">{{ errorMsg }}</p>
     </div>
 
-    <!-- 独立页面主体：Bootstrap卡片布局，和项目其他页面统一 -->
-    <div v-else class="card shadow-sm border-0 rounded-3 mt-2">
-      <!-- 页面标题栏：适配Bootstrap，和测试页的header样式呼应 -->
-      <div class="card-header border-0 pb-3 py-3">
-        <h1 class="card-title fs-2 mb-0">{{ pageInfo.title }}</h1>
-      </div>
-      <!-- 页面内容：复用i-markdown渲染Markdown，沿用文章详情页的样式适配 -->
-      <div class="card-body">
-        <div class="article-content text-secondary lead">
-          <i-markdown :model-value="pageInfo.content || '暂无页面内容'" />
+    <!-- 独立页面主体 -->
+    <div v-else class="article-main">
+      <main class="article-content-wrap card border-0 shadow-sm p-3 mt-2">
+        <header class="article-header mt-2">
+          <h1 class="article-title text-center fw-bold mb-3">{{ pageInfo.title }}</h1>
+        </header>
+        <div class="article-content mt-4">
+          <i-markdown :model-value="pageInfo.content || '暂无页面内容，敬请期待～'" />
         </div>
-      </div>
-      <!-- 页面底部：可选添加更新时间，提升实用性 -->
-      <div class="card-footer border-top d-flex justify-content-end text-muted">
-        <small>最后更新：{{ formatTime(pageInfo.last_update) }}</small>
-      </div>
+      </main>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, defineProps, watch } from 'vue' // 🌟 新增：引入watch
-import { useRouter } from 'vue-router'
-// 复用项目封装的请求工具
+import { ref, onMounted, defineProps, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import request from '@/utils/request'
-// 复用封装的Markdown渲染组件（路径和文章详情页一致）
 import iMarkdown from '@/comps/custom/i-markdown.vue'
 
-// 🌟 新增：获取环境变量中的网站标题，加兜底值，和文章详情页保持一致
+// 环境变量网站标题，兜底处理
 const SITE_TITLE = import.meta.env.VITE_TITLE || '朱某的生活印记'
 
-// 🌟 核心：接收路由props传递的key（路由/:key开启了props: true）
-// 独立页面路由是/:key，所以props接收的参数是key（如about/links等）
+// 接收路由传递的页面key：加default兜底，防止props.key为undefined
 const props = defineProps({
   key: {
     type: String,
-    required: true, // 路由传参必传，路由守卫已排除已定义路由
-    validator: (val) => val.trim() !== '', // 校验非空字符串
+    required: false, // 改为非必传，由代码兜底
+    default: '',     // 核心：默认值为空字符串，彻底避免undefined
   }
 })
 
-// 响应式状态：加载/错误/页面数据（和项目其他页面统一命名）
+// 响应式状态
 const loading = ref(true)
 const error = ref(false)
 const errorMsg = ref('')
-const pageInfo = ref({}) // 存储接口返回的页面数据
-// 🌟 新增：定义响应式页面标题，初始为加载中状态+环境变量后缀
+const pageInfo = ref({})
 const pageTitle = ref(`加载中... - ${SITE_TITLE}`)
 
-// 路由实例：仅用于错误时返回上一页
+// 路由实例
 const router = useRouter()
+const route = useRoute()
 
-// 🌟 新增：监听页面标题变化，实时更新浏览器标签页，立即执行初始赋值
+// 监听页面标题更新浏览器标签
 watch(
   pageTitle,
   (newTitle) => {
@@ -75,8 +66,7 @@ watch(
 )
 
 /**
- * 时间格式化：复用项目通用方法，保证全站时间格式统一
- * 处理接口返回的秒级时间戳
+ * 时间格式化：保留时分，适配最后更新时间
  */
 const formatTime = (timestamp) => {
   if (!timestamp || timestamp === 0) return '未知时间'
@@ -85,116 +75,210 @@ const formatTime = (timestamp) => {
 }
 
 /**
- * 获取独立页面数据：适配/api/pages/one接口，Query传参key
- * 接口优先用key查询（符合独立页面/xxx的使用场景）
+ * Key合法性校验：全量兜底，防止key为undefined/null
  */
-const getPageData = async () => {
+const checkPageKey = (key) => {
+  // 入参是initPage处理过的currentKey，已做trim，直接判断即可
+  if (!key) {
+    errorMsg.value = '页面标识不能为空，请检查访问地址'
+    return false
+  }
+  const keyReg = /^[a-zA-Z0-9-_]+$/
+  if (!keyReg.test(key)) {
+    errorMsg.value = '页面标识不合法，仅允许字母、数字、横杠和下划线'
+    return false
+  }
+  if (key.length > 20) {
+    errorMsg.value = '页面标识过长，最大支持20个字符'
+    return false
+  }
+  return true
+}
+
+/**
+ * 获取独立页面数据：入参加兜底，双重防护
+ */
+const getPageData = async (pageKey) => {
   loading.value = true
   error.value = false
   errorMsg.value = ''
   try {
-    // 构造接口请求参数：严格按API文档，给key加非空兜底避免trim()报错
     const queryParams = {
-      key: (props.key || '').trim(), // 核心修复：undefined兜底为空字符串
+      key: String(pageKey || '').trim(), // 兜底空字符串
       cache: false,
       withTrashed: false
     }
-    // 调用独立页面接口：GET /api/pages/one
     const res = await request.get('/api/pages/one', queryParams)
 
     if (res.code === 200) {
-      // 接口成功但无数据（key不存在/页面被删除/key为空）
       if (!res.data || Object.keys(res.data).length === 0) {
         error.value = true
         errorMsg.value = '未找到该独立页面，可能已被删除或访问地址错误'
-        pageTitle.value = `页面不存在 - ${SITE_TITLE}` // 🌟 新增：错误状态标题
+        pageTitle.value = `页面不存在 - ${SITE_TITLE}`
       } else {
         pageInfo.value = res.data
-        // 🌟 新增：接口成功，设置为「页面标题 - 站点标题」
+        error.value = false
         pageTitle.value = `${pageInfo.value.title} - ${SITE_TITLE}`
       }
     } else {
-      // 接口返回非200错误
       error.value = true
       errorMsg.value = res.msg || '获取独立页面数据失败'
-      pageTitle.value = `获取页面失败 - ${SITE_TITLE}` // 🌟 新增：接口错误标题
+      pageTitle.value = `获取页面失败 - ${SITE_TITLE}`
     }
   } catch (err) {
-    // 网络异常/接口报错
     error.value = true
     errorMsg.value = '网络异常，请检查网络后刷新页面'
     console.error('[独立页面接口异常]：', err)
-    pageTitle.value = `网络异常 - ${SITE_TITLE}` // 🌟 新增：网络异常标题
+    pageTitle.value = `网络异常 - ${SITE_TITLE}`
   } finally {
     loading.value = false
   }
 }
 
-// 页面挂载时请求数据：仅执行一次
+/**
+ * 页面初始化：封装校验+请求逻辑，加兜底
+ */
+const initPage = () => {
+  // 直接从路由取原始key，做兜底处理（最稳妥）
+  const currentKey = (route.params.key || '').trim()
+  if (checkPageKey(currentKey)) {
+    getPageData(currentKey)
+  } else {
+    error.value = true
+    loading.value = false
+    pageTitle.value = `页面标识不合法 - ${SITE_TITLE}`
+    setTimeout(() => router.go(-1), 3000)
+  }
+}
+
+// 监听路由参数变化：加新参数兜底，避免undefined
+watch(
+  () => route.params.key,
+  () => {
+    initPage() // 直接执行，内部会取最新的key并校验
+  },
+  { immediate: false }
+)
+
+// 页面挂载初始化
 onMounted(() => {
-  getPageData()
+  initPage()
 })
 </script>
 
 <style scoped>
-/* 页面内容样式：复用文章详情页的Markdown适配样式，保证全站统一 */
-.page-content {
+/* 加载状态 */
+.page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+/* 错误状态 */
+.page-error {
+  min-height: 60vh;
+}
+
+/* 页面标题 */
+.article-title {
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+/* 文章内容区：复用文章页Markdown样式 */
+.article-content {
   line-height: 1.8;
   font-size: 1.05rem;
-  padding: 0.5rem 0;
 }
 
-/* Markdown渲染内容适配：和文章详情页完全一致，保证样式统一 */
-.page-content h1,
-.page-content h2,
-.page-content h3,
-.page-content h4 {
-  margin: 1.5rem 0 1rem;
-  font-weight: 600;
+/* Markdown适配样式（和文章页完全一致） */
+.article-content :deep(p) {
+  margin-bottom: 1.2rem;
+  text-align: justify;
 }
-.page-content h2 {
+.article-content :deep(h2),
+.article-content :deep(h3),
+.article-content :deep(h4) {
+  margin: 1.8rem 0 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.article-content :deep(h2) {
   font-size: 1.5rem;
-  border-bottom: 1px solid #e9ecef;
   padding-bottom: 0.5rem;
 }
-.page-content p {
-  margin-bottom: 1rem;
+.article-content :deep(h3) {
+  font-size: 1.25rem;
 }
-.page-content ul,
-.page-content ol {
-  margin-left: 2rem;
-  margin-bottom: 1rem;
-}
-.page-content a {
-  color: #0d6efd;
-  text-decoration: underline;
-}
-.page-content a:hover {
-  color: #0a58ca;
-}
-.page-content img {
+.article-content :deep(img) {
   max-width: 100%;
-  height: auto;
-  border-radius: 0.375rem;
-  margin: 1rem 0;
+  border-radius: 0.5rem;
+  margin: 1.5rem auto;
   display: block;
-  margin-left: auto;
-  margin-right: auto; /* 图片居中，提升独立页面视觉效果 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+.article-content :deep(pre) {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+}
+.article-content :deep(code) {
+  background-color: #f3f4f6;
+  padding: 0.15rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.95em;
+}
+.article-content :deep(ul),
+.article-content :deep(ol) {
+  margin-bottom: 1.2rem;
+  padding-left: 1.8rem;
+}
+.article-content :deep(li) {
+  margin-bottom: 0.5rem;
+}
+.article-content :deep(a) {
+  color: #2563eb;
+  text-decoration: none;
+}
+.article-content :deep(a:hover) {
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+.article-content :deep(blockquote) {
+  border-left: 4px solid #d1d5db;
+  padding: 0.5rem 1rem;
+  background-color: #f9fafb;
+  margin-bottom: 1.2rem;
+  color: #4b5563;
+}
+.article-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.2rem;
+}
+.article-content :deep(td),
+.article-content :deep(th) {
+  border: 1px solid #e5e7eb;
+  padding: 0.7rem;
+  text-align: left;
+}
+.article-content :deep(th) {
+  background-color: #f9fafb;
+  font-weight: 600;
 }
 
-/* 加载状态垂直居中：和项目其他页面统一 */
-.py-10 {
-  padding-top: 10rem;
-  padding-bottom: 10rem;
-}
-
-/* 移动端适配：和文章详情页统一规则 */
+/* 移动端适配 */
 @media (max-width: 768px) {
-  .fs-2 {
-    font-size: 1.5rem !important;
+  .article-title {
+    font-size: clamp(1.5rem, 5vw, 2rem);
   }
-  .page-content h2 {
-    font-size: 1.25rem;
+  .article-content {
+    font-size: 1rem;
   }
 }
 </style>

@@ -13,19 +13,18 @@ const ROUTER_MODE = (VITE_ENV.VITE_ROUTER_MODE || 'hash').toLowerCase()
 // 项目标题：从环境变量读取，用于页面标题拼接
 const APP_TITLE = VITE_ENV.VITE_TITLE || '朱某的生活印记'
 
-// 1. 定义完整路由规则（保留所有原有业务逻辑，无修改）
+// 1. 定义完整路由规则：新增/links专属路由
 const routes = [
   // 根路径重定向到首页
   { path: '/index', redirect: '/' },
 
-  // 核心业务页面
+  // 核心固定路由/带参数路由：按业务顺序排
   {
     path: '/',
     name: '首页',
     component: () => import('@/views/index/pages/index.vue'),
     meta: { title: '首页', requiresAuth: false }
   },
-  // 用户设置页（仅登录可访问）
   {
     path: '/user',
     name: '用户',
@@ -34,31 +33,16 @@ const routes = [
     beforeEnter: (to, from, next) => {
       const commStore = useCommStore()
       const isLogin = !utils.is.empty(commStore.getLogin.user)
-      isLogin ? next() : next('/') // 未登录跳首页
+      isLogin ? next() : next('/')
     }
   },
-  // 文章详情页 /archives/{id}
   {
     path: '/archives/:id',
     name: '文章详情',
     component: () => import('@/views/index/pages/archives.vue'),
     meta: { title: '文章详情', requiresAuth: false },
-    props: true // 自动注入id参数到组件props
+    props: true
   },
-  // 独立页面 /{key}（友链/归档等，需放在非通配路由后）
-  {
-    path: '/:key',
-    name: '独立页面',
-    component: () => import('@/views/index/pages/page.vue'),
-    meta: { title: '独立页面', requiresAuth: false },
-    props: true,
-    // 排除已定义的路由（避免覆盖）
-    beforeEnter: (to, from, next) => {
-      const excludeKeys = ['user', 'index'] // 已定义的路由name/key
-      excludeKeys.includes(to.params.key) ? next('/404') : next()
-    }
-  },
-  // 作者页面 /author/{id}
   {
     path: '/author/:id',
     name: '作者主页',
@@ -66,7 +50,6 @@ const routes = [
     meta: { title: '作者主页', requiresAuth: false },
     props: true
   },
-  // 主题设置（仅管理员可访问）
   {
     path: '/functions',
     name: '主题设置',
@@ -80,6 +63,31 @@ const routes = [
       (isLogin && isAdmin) ? next() : next('/')
     }
   },
+  // 🌟 新增：/links专属路由（精准匹配，放在/:key前面）
+  {
+    path: '/links',
+    name: '友链页面',
+    component: () => import('@/views/index/pages/links.vue'),
+    meta: { title: '友链', requiresAuth: false }
+  },
+
+  // 独立页动态路由：匹配/xxx（如/about），排除/links（已精准匹配）
+  {
+    path: '/:key',
+    name: '独立页面',
+    component: () => import('@/views/index/pages/page.vue'),
+    meta: { title: '独立页面', requiresAuth: false },
+    props: true,
+    beforeEnter: (to, from, next) => {
+      const currentKey = (to.params.key || '').trim()
+      if (!currentKey) {
+        next('/404')
+      } else {
+        next()
+      }
+    }
+  },
+
   // 404 兜底路由（必须放在最后！）
   {
     path: '/:pathMatch(.*)*',
@@ -104,29 +112,25 @@ const router = createRouter({
   }
 })
 
-// 全局前置守卫：统一标题 + 通用权限校验（保留原有逻辑，增强体验）
+// 全局前置守卫：统一标题 + 通用权限校验（保留原有逻辑）
 router.beforeEach((to, from, next) => {
-  // 统一设置页面标题：路由标题 + 项目总标题（如「首页 - 朱某的生活印记」）
   const pageTitle = to.meta.title || to.name || '未知页面'
   document.title = `${pageTitle} - ${APP_TITLE}`
 
-  // 通用登录/管理员校验（仅对标记requiresAuth的路由生效）
   if (to.meta.requiresAuth) {
     const commStore = useCommStore()
     const userInfo = commStore.getLogin.user
     const isLogin = !utils.is.empty(userInfo)
 
-    // 未登录直接跳首页
     if (!isLogin) {
       next('/')
       return
     }
 
-    // 管理员路由额外校验（兜底，和beforeEnter双重校验更安全）
     if (to.meta.isAdmin) {
-      const isAdmin = userInfo.isAdmin || false // 按实际后端返回字段调整
+      const isAdmin = userInfo.isAdmin || false
       if (!isAdmin) {
-        next('/') // 非管理员跳首页
+        next('/')
         return
       }
     }
@@ -135,12 +139,11 @@ router.beforeEach((to, from, next) => {
   next()
 })
 
-// 全局错误处理（捕获路由加载/跳转错误，避免项目崩溃）
+// 全局错误处理（捕获路由加载/跳转错误）
 router.onError((error) => {
   console.error(`[路由错误] ${error.type}: ${error.message}`)
-  // 路由组件加载失败时，跳404页面
   if (error.type === 'load-component') {
-    router.push('/:pathMatch(.*)*')
+    router.push('/404') // 修正：直接跳/404，而非原路径
   }
 })
 
