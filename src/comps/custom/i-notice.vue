@@ -64,7 +64,7 @@
             </div>
           </div>
           <!-- 公告元信息 -->
-          <div class="notice-meta d-flex align-items-center flex-wrap gap-2 mt-3">
+          <div class="notice-meta d-flex align-items-center flex-wrap gap-2 mt-2">
             <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">
               <i class="bi bi-tag me-1"></i> {{ currentNotice?.type || '系统通知' }}
             </span>

@@ -243,14 +243,25 @@ onMounted(async () => {
   color: #212529;
 }
 
-/* 描述样式 */
+/* 描述样式 - 重点：补充line-clamp标准属性 + 全浏览器兼容 */
 .link-desc {
   line-height: 1.5;
   font-size: 0.95rem;
   overflow: hidden;
-  display: -webkit-box;
+  /* 标准属性 + 多浏览器前缀兼容 */
+  line-clamp: 2;
   -webkit-line-clamp: 2;
+  -moz-line-clamp: 2;
+  -o-line-clamp: 2;
+  /* 必须配合的属性（跨浏览器） */
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-box;
+  display: box;
   -webkit-box-orient: vertical;
+  -moz-box-orient: vertical;
+  -ms-box-orient: vertical;
+  box-orient: vertical;
 }
 
 /* 通用Markdown样式 */
@@ -317,6 +328,10 @@ onMounted(async () => {
   }
   .link-name {
     font-size: 1rem !important;
+  }
+  /* 响应式调整文本截断字号 */
+  .link-desc {
+    font-size: 0.85rem;
   }
 }
 

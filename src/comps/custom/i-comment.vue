@@ -36,13 +36,13 @@
             @click="emit('toLogin')"
             class="btn btn-primary btn-sm px-4 rounded-2"
           >
-            <i class="bi bi-box-arrow-in-right me-1"></i> 登录
+            登录
           </button>
           <button 
             @click="emit('toRegister')"
             class="btn btn-outline-primary btn-sm px-4 rounded-2"
           >
-            <i class="bi bi-person-plus me-1"></i> 注册
+            注册
           </button>
         </div>
       </div>
