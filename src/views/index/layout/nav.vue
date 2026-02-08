@@ -86,13 +86,18 @@
               </button>
               <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdownMenu" :class="{ 'show': userDropdownOpen }">
                 <li>
-                  <router-link class="dropdown-item" to="/account/home">
+                  <router-link class="dropdown-item" :to="`/author/${store.comm.login.user.id}`">
                     <i class="bi bi-person me-1"></i>用户中心
+                  </router-link>
+                </li>
+                <li>
+                  <router-link class="dropdown-item" to="/user">
+                    <i class="bi bi-gear me-1"></i>用户设置
                   </router-link>
                 </li>
                 <li v-if="store.comm.login.user.role === 'admin'">
                   <router-link class="dropdown-item" to="/admin">
-                    <i class="bi bi-gear me-1"></i>后台管理
+                    <i class="bi bi-gear-fill me-1"></i>后台管理
                   </router-link>
                 </li>
                 <li><hr class="dropdown-divider"></li>
@@ -224,6 +229,9 @@
           </div>
           <router-link class="btn btn-outline-secondary w-100" to="/account/home" @click="closeSidebar">
             个人中心
+          </router-link>
+          <router-link class="btn btn-outline-secondary w-100" to="/user" @click="closeSidebar">
+            用户资料
           </router-link>
           <router-link v-if="store.comm.login.user.role === 'admin'" class="btn btn-outline-warning w-100" to="/admin" @click="closeSidebar">
             后台管理

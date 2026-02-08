@@ -1,6 +1,5 @@
 // src/utils/toast.js
 // 基于 Bootstrap 5 Toasts 组件的消息提示库
-
 import * as bootstrap from 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 class Toast {
@@ -42,6 +41,11 @@ class Toast {
     toastElement.role = 'alert';
     toastElement.ariaLive = 'assertive';
     toastElement.ariaAtomic = 'true';
+    
+    // 设置宽度、圆角和动画效果
+    toastElement.style.width = '300px';
+    toastElement.style.borderRadius = '2px';
+    toastElement.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
 
     // 统一使用纯白背景和纯黑文字
     const bgClass = 'bg-white';

@@ -52,7 +52,7 @@
       <!-- 评论组件：优化间距，自然衔接 -->
       <section class="article-comment mt-2 mb-8">
         <CommentList
-          :articleId="props.id"
+          :articleId="getCurrentArticleId()"
           :commentCount="commentCount"
           :commentList="staticCommentList"
           :isLogin="isLogin"
@@ -67,7 +67,7 @@
 
 <script setup>
 import { ref, onMounted, defineProps, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import request from '@/utils/request'
 import iMarkdown from '@/comps/custom/i-markdown.vue'
 import CommentList from '@/comps/custom/i-comment.vue'
@@ -81,13 +81,10 @@ const store = {
 // 环境变量网站标题，兜底处理
 const SITE_TITLE = import.meta.env.VITE_TITLE || '朱某的生活印记'
 
-// 接收路由传递的文章ID
-const props = defineProps({
-  id: {
-    type: [String, Number],
-    required: true
-  }
-})
+// 路由参数获取文章ID
+const getCurrentArticleId = () => {
+  return route.params.id
+}
 
 // 响应式状态：保留所有原有业务逻辑
 const loading = ref(true)
@@ -102,6 +99,7 @@ const isDarkMode = ref(false)
 
 // 路由实例
 const router = useRouter()
+const route = useRoute()
 
 // 监听页面标题，更新浏览器标签
 watch(
@@ -149,16 +147,16 @@ const getArticleDetail = async (id) => {
 
     if (res.code === 200) {
       if (!res.data || Object.keys(res.data).length === 0) {
-        error.value = true
-        errorMsg.value = '未找到该文章，可能已被删除或ID错误'
-        pageTitle.value = `文章不存在 - ${SITE_TITLE}`
-      } else {
-        articleInfo.value = res.data
-        error.value = false
-        pageTitle.value = `${articleInfo.value.title} - ${SITE_TITLE}`
-        // 获取文章评论
-        getComments(props.id)
-      }
+          error.value = true
+          errorMsg.value = '未找到该文章，可能已被删除或ID错误'
+          pageTitle.value = `文章不存在 - ${SITE_TITLE}`
+        } else {
+          articleInfo.value = res.data
+          error.value = false
+          pageTitle.value = `${articleInfo.value.title} - ${SITE_TITLE}`
+          // 获取文章评论
+          getComments(articleInfo.value.id)
+        }
     } else {
       error.value = true
       errorMsg.value = res.msg || '获取文章详情失败'
@@ -203,12 +201,12 @@ const handlePublishComment = async (data) => {
     const res = await request.post('/api/comment/create', {
       content: data.content,
       bind_type: 'article',
-      bind_id: props.id
+      bind_id: articleInfo.value.id
     })
     
     if (res.code === 200) {
       // 重新获取评论列表
-      await getComments(props.id)
+      await getComments(articleInfo.value.id)
       // 显示成功提示
       if (window.Toast) {
         window.Toast.success('评论发布成功！')
@@ -233,13 +231,13 @@ const handleReplyComment = async (data) => {
     const res = await request.post('/api/comment/create', {
       content: data.content,
       bind_type: 'article',
-      bind_id: props.id,
+      bind_id: articleInfo.value.id,
       pid: data.commentId
     })
     
     if (res.code === 200) {
       // 重新获取评论列表
-      await getComments(props.id)
+      await getComments(articleInfo.value.id)
       // 显示成功提示
       if (window.Toast) {
         window.Toast.success('回复发布成功！')
@@ -268,8 +266,9 @@ const detectDarkMode = () => {
 
 // 页面挂载执行核心逻辑
 onMounted(() => {
-  if (checkArticleId(props.id)) {
-    getArticleDetail(Number(props.id))
+  const currentId = getCurrentArticleId()
+  if (checkArticleId(currentId)) {
+    getArticleDetail(Number(currentId))
   } else {
     error.value = true
     loading.value = false
@@ -282,6 +281,17 @@ onMounted(() => {
   // 监听深色模式变化
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', detectDarkMode)
 })
+
+// 监听路由参数变化，重新获取文章数据
+watch(
+  () => route.params.id,
+  (newId) => {
+    if (newId && checkArticleId(newId)) {
+      getArticleDetail(Number(newId))
+    }
+  },
+  { immediate: false }
+)
 </script>
 
 <style scoped>

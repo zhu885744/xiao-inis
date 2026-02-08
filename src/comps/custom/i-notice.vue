@@ -158,8 +158,7 @@ const initModal = () => {
   if (noticeModal.value) {
     modalInstance = new Modal(noticeModal.value, {
       backdrop: true,
-      keyboard: true,
-      animation: true
+      keyboard: true
     })
   }
 }
@@ -252,28 +251,5 @@ onUnmounted(() => {
 
 .notice-text p:last-child {
   margin-bottom: 0;
-}
-</style>
-
-<style>
-/* 公告弹窗动画效果 */
-.modal.fade .modal-dialog {
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-  transform: translate(0, -25%);
-  opacity: 0;
-}
-
-.modal.fade.show .modal-dialog {
-  transform: translate(0, 0);
-  opacity: 1;
-}
-
-.modal.fade .modal-content {
-  transition: opacity 0.3s ease-out;
-  opacity: 0;
-}
-
-.modal.fade.show .modal-content {
-  opacity: 1;
 }
 </style>

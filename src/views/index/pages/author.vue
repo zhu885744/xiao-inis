@@ -1,15 +1,14 @@
 <template>
-  <div class="author-info-card card border rounded-2 shadow-sm mt-2">
+  <div class="card mt-2">
     <!-- 作者信息卡片头部 -->
-    <div class="card-header bg-transparent border-bottom-0 py-3 px-4">
+    <div class="card-header">
       <div class="d-flex justify-content-between align-items-center">
-        <h5 class="card-title mb-0 d-flex align-items-center gap-2">
-          <i class="bi bi-person-badge-fill text-primary fs-5"></i>
-          作者信息展示
+        <h5 class="card-title mb-0 d-flex align-items-center gap-2 text-primary fw-semibold">
+          用户中心
         </h5>
         <button 
-          @click="refreshData" 
-          class="btn btn-sm btn-outline-primary rounded-1 px-3 py-1"
+          @click="fetchUserInfo" 
+          class="btn btn-sm btn-outline-primary rounded-full px-4 py-1.5 transition-all hover:bg-primary hover:text-white"
           :disabled="loading"
         >
           <i class="bi" :class="loading ? 'bi-arrow-clockwise spin' : 'bi-arrow-clockwise'"></i>
@@ -18,378 +17,411 @@
       </div>
     </div>
 
-    <div class="card-body p-4">
-      <!-- 作者基本信息 -->
-      <div class="author-basic-info mb-4">
-        <div class="d-flex align-items-center gap-3 mb-3">
+    <!-- 加载状态 -->
+    <div v-if="loading" class="card-body text-center py-10">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">加载中...</span>
+      </div>
+      <p class="mt-3 text-muted">正在加载用户信息...</p>
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="card-body text-center py-10">
+      <i class="bi bi-exclamation-circle text-danger fs-1"></i>
+      <p class="mt-3 text-muted">{{ error }}</p>
+      <button 
+        @click="fetchUserInfo" 
+        class="btn btn-sm btn-outline-primary mt-3"
+      >
+        重试
+      </button>
+    </div>
+
+    <!-- 无数据状态 -->
+    <div v-else-if="!userInfo" class="card-body text-center py-10">
+      <i class="bi bi-person-x text-muted fs-1"></i>
+      <p class="mt-3 text-muted">用户不存在</p>
+    </div>
+
+    <!-- 用户信息内容 -->
+    <div v-else class="card-body p-4">
+      <!-- 用户基本信息 -->
+      <div class="user-basic-info mb-4">
+        <div class="d-flex align-items-start gap-4 mb-4">
           <div class="position-relative">
             <img 
-              :src="author.avatar || defaultAvatar" 
-              alt="作者头像"
-              class="rounded-circle border border-3 border-white shadow-sm"
-              width="80"
-              height="80"
+              :src="userInfo.avatar || defaultAvatar" 
+              :alt="userInfo.nickname"
+              class="rounded-full border-4 border-white shadow-md transition-transform duration-300 hover:scale-105"
+              width="120"
+              height="120"
               style="object-fit: cover;"
               @error="handleAvatarError"
             >
-            <div v-if="author.isVerified" class="position-absolute bottom-0 end-0">
-              <i class="bi bi-patch-check-fill text-primary fs-5"></i>
-            </div>
           </div>
           <div class="flex-grow-1">
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <h4 class="mb-0 fw-bold">{{ author.name }}</h4>
-              <span v-if="author.level" class="badge bg-primary rounded-pill fs-7">
-                Lv.{{ author.level }}
+            <div class="d-flex align-items-center gap-3 mb-2">
+              <h3 class="mb-0 fw-bold text-lg">
+                {{ userInfo.nickname }}
+              </h3>
+              <!-- 等级标识 -->
+              <span v-if="userLevel" class="badge bg-primary rounded-full px-3 py-1 text-sm font-medium">
+                {{ userLevel }}
               </span>
             </div>
-            <p class="text-muted mb-2">
-              <i class="bi bi-briefcase me-1"></i>
-              {{ author.title || '资深创作者' }}
+            <!-- 头衔 -->
+            <p class="text-muted mb-3">
+              <i class="bi bi-briefcase me-2"></i>
+              {{ userInfo.title || '普通用户' }}
             </p>
-            <div class="d-flex align-items-center gap-3">
-              <span class="d-flex align-items-center gap-1">
-                <i class="bi bi-geo-alt"></i>
-                {{ author.location || '未知地区' }}
+            <!-- 用户信息 -->
+            <div class="d-flex align-items-center gap-4 flex-wrap text-sm">
+              <!-- 注册时间 -->
+              <span class="d-flex align-items-center gap-2 text-gray-600">
+                <i class="bi bi-calendar3 text-primary"></i>
+                注册于 {{ formatDate(userInfo.create_time) }}
               </span>
-              <span class="d-flex align-items-center gap-1">
-                <i class="bi bi-calendar3"></i>
-                加入时间：{{ formatDate(author.joinDate) }}
+              <!-- 最后登录 -->
+              <span class="d-flex align-items-center gap-2 text-gray-600">
+                <i class="bi bi-clock text-success"></i>
+                最近登录 {{ formatDate(userInfo.login_time) }}
               </span>
             </div>
           </div>
         </div>
 
-        <!-- 作者签名 -->
-        <div class="author-signature mb-3 p-3 bg-light-subtle rounded-2">
-          <p class="mb-0 fs-6">
-            <i class="bi bi-quote text-primary me-2"></i>
-            {{ author.signature || '这个人很懒，什么都没有留下...' }}
+        <!-- 个人简介 -->
+        <div class="user-description mb-4 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-3 border border-primary/10">
+          <p class="mb-0 fs-6 leading-relaxed">
+            <i class="bi bi-quote text-primary me-3 opacity-75"></i>
+            {{ userInfo.description || '这个人很懒，什么都没有留下！' }}
           </p>
         </div>
-      </div>
 
-      <!-- 数据统计 -->
-      <div class="author-stats row g-3 mb-4">
-        <div class="col-4 col-md-2 text-center">
-          <div class="p-3 bg-primary-subtle rounded-2">
-            <div class="fw-bold fs-4 text-primary">{{ author.stats.articles }}</div>
-            <div class="text-muted fs-7">文章</div>
-          </div>
-        </div>
-        <div class="col-4 col-md-2 text-center">
-          <div class="p-3 bg-success-subtle rounded-2">
-            <div class="fw-bold fs-4 text-success">{{ author.stats.likes }}</div>
-            <div class="text-muted fs-7">获赞</div>
-          </div>
-        </div>
-        <div class="col-4 col-md-2 text-center">
-          <div class="p-3 bg-info-subtle rounded-2">
-            <div class="fw-bold fs-4 text-info">{{ author.stats.views }}</div>
-            <div class="text-muted fs-7">阅读量</div>
-          </div>
-        </div>
-        <div class="col-4 col-md-2 text-center">
-          <div class="p-3 bg-warning-subtle rounded-2">
-            <div class="fw-bold fs-4 text-warning">{{ author.stats.followers }}</div>
-            <div class="text-muted fs-7">粉丝</div>
-          </div>
-        </div>
-        <div class="col-4 col-md-2 text-center">
-          <div class="p-3 bg-danger-subtle rounded-2">
-            <div class="fw-bold fs-4 text-danger">{{ author.stats.comments }}</div>
-            <div class="text-muted fs-7">评论</div>
-          </div>
-        </div>
-        <div class="col-4 col-md-2 text-center">
-          <div class="p-3 bg-secondary-subtle rounded-2">
-            <div class="fw-bold fs-4 text-secondary">{{ author.stats.shares }}</div>
-            <div class="text-muted fs-7">分享</div>
+        <!-- 用户标签 -->
+        <div class="user-tags mb-4">
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <!-- 管理员标识 -->
+            <span v-if="isAdmin" class="badge rounded-full bg-danger text-white px-4 py-2 text-sm font-medium transition-all hover:bg-primary hover:text-white cursor-pointer">
+              系统管理员
+            </span>
+            <!-- 性别标签 -->
+            <span class="badge rounded-full bg-primary-subtle text-primary px-4 py-2 text-sm font-medium transition-all hover:bg-primary hover:text-white cursor-pointer">
+              <i class="bi" :class="userInfo.gender === 'boy' ? 'bi-gender-male' : 'bi-gender-female'"></i>
+              {{ userInfo.gender === 'boy' ? '男孩' : userInfo.gender === 'girl' ? '女孩' : '未知' }}
+            </span>
+            <!-- 等级标签 -->
+            <span class="badge rounded-full bg-success-subtle text-success px-4 py-2 text-sm font-medium transition-all hover:bg-success hover:text-white cursor-pointer">
+              <i class="bi bi-activity"></i>
+              {{ userLevel || '普通用户' }}
+            </span>
+            <!-- 经验值标签 -->
+            <span class="badge rounded-full bg-warning-subtle text-warning px-4 py-2 text-sm font-medium transition-all hover:bg-warning hover:text-white cursor-pointer">
+              <i class="bi bi-star"></i>
+              {{ userInfo.exp }} 经验值
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- 技能标签 -->
-      <div class="author-skills mb-4">
-        <h6 class="mb-3 d-flex align-items-center gap-2">
-          <i class="bi bi-tools text-primary"></i>
-          技能标签
+      <!-- 用户等级信息 -->
+      <div v-if="userLevelInfo" class="user-level mb-5">
+        <h6 class="mb-3 d-flex align-items-center gap-2 text-lg font-medium">
+          <i class="bi bi-activity text-primary fs-5"></i>
+          等级信息
         </h6>
-        <div class="d-flex flex-wrap gap-2">
-          <span 
-            v-for="(skill, index) in author.skills" 
-            :key="index"
-            class="badge rounded-pill px-3 py-2"
-            :class="getSkillBadgeClass(index)"
-            @click="showSkillMessage(skill)"
-          >
-            {{ skill }}
-          </span>
+        <div class="p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-3 border border-primary/20">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-gray-600">当前等级</span>
+            <span class="fw-bold text-primary">{{ userLevelInfo.current.name }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <span class="text-gray-600">下一等级</span>
+            <span class="text-gray-700">{{ userLevelInfo.next.name }}</span>
+          </div>
+          <!-- 经验值进度条 -->
+          <div class="mb-1">
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-sm text-gray-500">经验值进度</span>
+              <span class="text-sm font-medium">{{ userInfo.exp }} / {{ userLevelInfo.next.exp }}</span>
+            </div>
+            <div class="progress rounded-full overflow-hidden" style="height: 10px;">
+              <div 
+                class="progress-bar bg-gradient-to-r from-primary to-secondary" 
+                :style="{ width: experienceProgress + '%' }"
+                role="progressbar"
+                :aria-valuenow="userInfo.exp"
+                :aria-valuemin="userLevelInfo.current.exp"
+                :aria-valuemax="userLevelInfo.next.exp"
+              ></div>
+            </div>
+          </div>
+          <!-- 等级描述 -->
+          <div class="mt-4">
+            <p class="text-sm text-gray-600 mb-0">
+              {{ userLevelInfo.current.description }}
+            </p>
+          </div>
         </div>
       </div>
 
-      <!-- 最近文章 -->
-      <div class="recent-articles mb-4">
-        <h6 class="mb-3 d-flex align-items-center gap-2">
-          <i class="bi bi-file-text text-primary"></i>
-          最近文章
+      <!-- 用户权限信息 -->
+      <div v-if="userAuthInfo" class="user-auth mb-5">
+        <h6 class="mb-3 d-flex align-items-center gap-2 text-lg font-medium">
+          <i class="bi bi-shield-check text-primary fs-5"></i>
+          权限信息
         </h6>
-        <div class="list-group">
-          <a 
-            v-for="article in author.recentArticles" 
-            :key="article.id"
-            href="#"
-            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 py-2 px-3 mb-1 rounded-2 hover-lift"
-            @click.prevent="showArticleDetail(article)"
-          >
-            <div class="d-flex align-items-center gap-2">
-              <i class="bi bi-file-text text-muted"></i>
-              <span class="text-truncate" style="max-width: 200px;">{{ article.title }}</span>
-            </div>
-            <div class="text-muted fs-7">
-              {{ formatDate(article.date) }}
-            </div>
-          </a>
+        <div class="p-4 bg-gradient-to-r from-success/10 to-secondary/10 rounded-3 border border-success/20">
+          <div class="mb-3">
+            <span class="fw-medium text-gray-700">用户组：</span>
+            <span v-for="(group, index) in userAuthInfo.group.list" :key="index" class="badge bg-success text-white mx-2 px-3 py-1 rounded-full">
+              {{ group.name }}
+            </span>
+          </div>
+          <div>
+            <span class="fw-medium text-gray-700">权限范围：</span>
+            <span class="badge bg-success-subtle text-success mx-2 px-3 py-1 rounded-full">
+              {{ userAuthInfo.all ? '全部权限' : '部分权限' }}
+            </span>
+          </div>
         </div>
       </div>
 
       <!-- 交互按钮 -->
-      <div class="author-actions d-flex gap-2 flex-wrap">
-        <button 
-          @click="followAuthor" 
+      <div class="user-actions d-flex gap-2 flex-wrap">
+        <router-link 
+          :to="'/user'" 
           class="btn btn-primary btn-sm rounded-1 px-4 py-2"
-          :disabled="author.isFollowing"
+          v-if="isCurrentUser"
         >
-          <i class="bi" :class="author.isFollowing ? 'bi-check-circle' : 'bi-plus-circle'"></i>
-          {{ author.isFollowing ? '已关注' : '关注作者' }}
-        </button>
+          <i class="bi bi-gear"></i>
+          编辑资料
+        </router-link>
         <button 
-          @click="sendMessage" 
+          @click="copyUserInfo" 
           class="btn btn-outline-primary btn-sm rounded-1 px-4 py-2"
         >
-          <i class="bi bi-chat-left-text"></i>
-          发送消息
+          <i class="bi bi-copy"></i>
+          复制信息
         </button>
         <button 
-          @click="shareProfile" 
+          @click="shareUserInfo" 
           class="btn btn-outline-secondary btn-sm rounded-1 px-4 py-2"
         >
           <i class="bi bi-share"></i>
-          分享资料
+          分享
         </button>
-        <button 
-          @click="showAllStats" 
-          class="btn btn-outline-info btn-sm rounded-1 px-4 py-2"
-        >
-          <i class="bi bi-graph-up"></i>
-          详细数据
-        </button>
-      </div>
-    </div>
-
-    <!-- 加载状态 -->
-    <div v-if="loading" class="card-footer text-center py-3 bg-transparent">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">加载中...</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import request from '@/utils/request'
+import toast from '@/utils/toast'
 import defaultAvatar from '@/assets/img/avatar.png'
+import { useCommStore } from '@/store/comm'
+
+const route = useRoute()
+const store = useCommStore()
 
 // 响应式数据
 const loading = ref(false)
-const author = ref({
-  id: 1,
-  name: '张三',
-  avatar: defaultAvatar,
-  title: '全栈开发者',
-  level: 8,
-  location: '北京',
-  joinDate: '2022-03-15',
-  signature: '热爱编程，热爱生活，分享知识与快乐！',
-  isVerified: true,
-  isFollowing: false,
-  stats: {
-    articles: 128,
-    likes: 3567,
-    views: 152890,
-    followers: 487,
-    comments: 1256,
-    shares: 324
-  },
-  skills: ['Vue.js', 'React', 'Node.js', 'TypeScript', 'Python', 'Docker', 'MySQL', 'Git'],
-  recentArticles: [
-    { id: 1, title: 'Vue 3 性能优化完全指南', date: '2024-01-15', views: 12500 },
-    { id: 2, title: 'TypeScript 高级类型技巧', date: '2024-01-10', views: 8900 },
-    { id: 3, title: 'Node.js 微服务架构实践', date: '2024-01-05', views: 6700 },
-    { id: 4, title: '前端工程化最佳实践', date: '2024-01-01', views: 15300 }
-  ]
-})
+const error = ref('')
+const userInfo = ref(null)
 
 // 计算属性
-const activityScore = computed(() => {
-  const stats = author.value.stats
-  return (stats.articles * 5 + stats.likes * 3 + stats.comments * 2) / 100
+// 用户ID从路由参数获取
+const userId = computed(() => {
+  return route.params.id || 1
 })
 
-const formattedStats = computed(() => {
-  const stats = author.value.stats
-  return {
-    articles: stats.articles.toLocaleString(),
-    likes: stats.likes.toLocaleString(),
-    views: (stats.views / 1000).toFixed(1) + 'k',
-    followers: stats.followers.toLocaleString(),
-    comments: stats.comments.toLocaleString(),
-    shares: stats.shares.toLocaleString()
-  }
+// 是否为管理员
+const isAdmin = computed(() => {
+  if (!userInfo.value || !userInfo.value.result?.auth) return false
+  return userInfo.value.result.auth.all || 
+    (userInfo.value.result.auth.group?.list && 
+     userInfo.value.result.auth.group.list.some(group => group.key === 'admin'))
+})
+
+// 用户等级信息
+const userLevelInfo = computed(() => {
+  return userInfo.value?.result?.level
+})
+
+// 用户权限信息
+const userAuthInfo = computed(() => {
+  return userInfo.value?.result?.auth
+})
+
+// 用户等级显示
+const userLevel = computed(() => {
+  if (!userLevelInfo.value) return null
+  return userLevelInfo.value.current.name
+})
+
+// 经验值进度
+const experienceProgress = computed(() => {
+  if (!userLevelInfo.value || !userInfo.value) return 0
+  const current = userLevelInfo.value.current.exp
+  const next = userLevelInfo.value.next.exp
+  const currentExp = userInfo.value.exp
+  if (next <= current) return 100
+  return Math.min(100, Math.round(((currentExp - current) / (next - current)) * 100))
+})
+
+// 是否为当前登录用户
+const isCurrentUser = computed(() => {
+  const currentUser = store.comm?.login?.user
+  return currentUser && userInfo.value && currentUser.id === userInfo.value.id
 })
 
 // 方法
-const refreshData = async () => {
+// 获取用户信息
+const fetchUserInfo = async () => {
   loading.value = true
+  error.value = ''
+  
   try {
-    // 模拟API请求
-    await new Promise(resolve => setTimeout(resolve, 800))
+    const res = await request.get('/api/users/one', {
+      id: userId.value
+    })
     
-    // 更新数据
-    author.value.stats = {
-      articles: author.value.stats.articles + Math.floor(Math.random() * 3),
-      likes: author.value.stats.likes + Math.floor(Math.random() * 20),
-      views: author.value.stats.views + Math.floor(Math.random() * 100),
-      followers: author.value.stats.followers + Math.floor(Math.random() * 2),
-      comments: author.value.stats.comments + Math.floor(Math.random() * 5),
-      shares: author.value.stats.shares + Math.floor(Math.random() * 3)
+    if (res.code === 200 && res.data) {
+      userInfo.value = res.data
+    } else {
+      error.value = res.msg || '获取用户信息失败'
+      userInfo.value = null
     }
-    
-    // 显示成功消息
-    showMessage('success', '数据更新成功！')
-  } catch (error) {
-    showMessage('error', '数据更新失败：' + error.message)
+  } catch (err) {
+    console.error('获取用户信息失败:', err)
+    error.value = '网络错误，请稍后重试'
+    userInfo.value = null
   } finally {
     loading.value = false
   }
 }
 
-const followAuthor = () => {
-  author.value.isFollowing = !author.value.isFollowing
-  const message = author.value.isFollowing ? '已关注作者' : '已取消关注'
-  showMessage('info', message)
-}
-
-const sendMessage = () => {
-  const message = `正在准备给 ${author.value.name} 发送消息...`
-  showMessage('info', message)
+// 复制用户信息
+const copyUserInfo = () => {
+  if (!userInfo.value) return
   
-  // 模拟消息发送
-  setTimeout(() => {
-    showMessage('success', '消息发送成功！')
-  }, 1500)
+  const user = userInfo.value
+  const infoText = `
+用户信息：
+昵称：${user.nickname}
+账号：${user.account}
+头衔：${user.title || '普通用户'}
+简介：${user.description || '暂无简介'}
+性别：${user.gender === 'boy' ? '男孩' : user.gender === 'girl' ? '女孩' : '未知'}
+邮箱：${user.email || '未设置'}
+手机：${user.phone || '未设置'}
+经验值：${user.exp} 点
+注册时间：${formatDate(user.create_time)}
+最后登录：${formatDate(user.login_time)}
+  `.trim()
+  
+  navigator.clipboard.writeText(infoText)
+    .then(() => {
+      toast.success('用户信息已复制到剪贴板')
+    })
+    .catch(() => {
+      toast.error('复制失败')
+    })
 }
 
-const shareProfile = () => {
-  const shareText = `分享 ${author.value.name} 的个人资料：资深开发者，关注了解更多精彩内容！`
+// 分享用户信息
+const shareUserInfo = () => {
+  if (!userInfo.value) return
+  
+  const user = userInfo.value
+  const shareText = `分享 ${user.nickname} 的个人资料：${user.title || '普通用户'}，快来认识一下吧！`
+  
   if (navigator.share) {
     navigator.share({
-      title: `${author.value.name} 的个人资料`,
+      title: `${user.nickname} 的个人资料`,
       text: shareText,
       url: window.location.href
     })
   } else {
     // 复制到剪贴板
     navigator.clipboard.writeText(shareText)
-      .then(() => showMessage('success', '个人资料已复制到剪贴板！'))
-      .catch(() => showMessage('error', '复制失败'))
+      .then(() => {
+        toast.success('个人资料已复制到剪贴板')
+      })
+      .catch(() => {
+        toast.error('复制失败')
+      })
   }
 }
 
-const showAllStats = () => {
-  const stats = author.value.stats
-  const message = `
-    详细数据统计：
-    📝 文章：${stats.articles} 篇
-    ❤️ 获赞：${stats.likes} 次
-    👀 阅读：${(stats.views / 1000).toFixed(1)}k 次
-    👥 粉丝：${stats.followers} 人
-    💬 评论：${stats.comments} 条
-    🔄 分享：${stats.shares} 次
-  `
-  showMessage('info', message, { duration: 5000 })
-}
-
-const showSkillMessage = (skill) => {
-  showMessage('info', `技能：${skill}`, { 
-    position: 'top',
-    showIcon: true
-  })
-}
-
-const showArticleDetail = (article) => {
-  const message = `《${article.title}》\n发布日期：${formatDate(article.date)}\n阅读量：${article.views.toLocaleString()}`
-  showMessage('info', message, { 
-    duration: 4000,
-    showClose: true 
-  })
-}
-
-const formatDate = (dateString) => {
-  const date = new Date(dateString)
+// 格式化日期
+const formatDate = (timestamp) => {
+  if (!timestamp) return '未知时间'
+  
+  const date = new Date(timestamp * 1000)
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   })
 }
 
+// 处理头像错误
 const handleAvatarError = (event) => {
   event.target.src = defaultAvatar
 }
 
-const getSkillBadgeClass = (index) => {
-  const classes = [
-    'bg-primary-subtle text-primary',
-    'bg-success-subtle text-success',
-    'bg-info-subtle text-info',
-    'bg-warning-subtle text-warning',
-    'bg-danger-subtle text-danger',
-    'bg-purple-subtle text-purple',
-    'bg-teal-subtle text-teal',
-    'bg-pink-subtle text-pink'
-  ]
-  return classes[index % classes.length]
-}
+// 存储原始页面标题（只保留基础网站标题，移除路由名称）
+const originalTitle = ref(
+  document.title.split(' - ')[document.title.split(' - ').length - 1]
+)
 
-// 消息提示函数（使用 Toast）
-const showMessage = (type, content, options = {}) => {
-  if (window.Toast) {
-    const defaultOptions = {
-      title: '',
-      delay: options.duration || 3000
-    }
-    
-    switch(type) {
-      case 'success':
-        return window.Toast.success(content, { ...defaultOptions, ...options })
-      case 'error':
-        return window.Toast.error(content, { ...defaultOptions, ...options })
-      case 'warning':
-        return window.Toast.warning(content, { ...defaultOptions, ...options })
-      case 'loading':
-        return window.Toast.info(content, { ...defaultOptions, ...options })
-      default:
-        return window.Toast.info(content, { ...defaultOptions, ...options })
-    }
+// 设置页面标题
+const setPageTitle = (nickname) => {
+  if (nickname) {
+    document.title = `${nickname} - ${originalTitle.value}`
   } else {
-    // Fallback to alert if Toast not available
-    alert(content)
+    document.title = originalTitle.value
   }
 }
 
-// 组件挂载
+// 组件挂载时获取用户信息
 onMounted(() => {
-  console.log('作者信息组件已加载')
+  fetchUserInfo()
+  
+  // 监听路由参数变化，重新获取用户信息
+  route.params.id && fetchUserInfo()
 })
+
+// 组件卸载时恢复原始页面标题
+onUnmounted(() => {
+  document.title = originalTitle.value
+})
+
+// 监听用户信息变化，更新页面标题
+watch(
+  () => userInfo.value,
+  (newUserInfo) => {
+    if (newUserInfo) {
+      setPageTitle(newUserInfo.nickname)
+    }
+  },
+  { immediate: true }
+)
+
+// 监听路由参数变化，重新获取用户信息
+watch(
+  () => route.params.id,
+  (newUserId) => {
+    if (newUserId) {
+      fetchUserInfo()
+    }
+  },
+  { immediate: true }
+)
 </script>

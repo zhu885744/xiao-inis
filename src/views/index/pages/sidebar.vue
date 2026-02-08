@@ -25,9 +25,9 @@
           <p v-else class="text-muted mb-3 user-bio">欢迎回来！</p>
           
           <div class="d-grid gap-2 mb-3">
-            <router-link to="/account/home" class="btn btn-primary btn-sm rounded-2 fw-medium py-2 text-decoration-none sidebar-btn">
+            <router-link :to="`/author/${store.comm.login.user.id}`" class="btn btn-primary btn-sm rounded-2 fw-medium py-2 text-decoration-none sidebar-btn">
               <i class="bi bi-person-circle me-1"></i>
-              个人中心
+              用户中心
             </router-link>
             <button v-if="store.comm.login.user.role === 'admin'" class="btn btn-outline-warning btn-sm rounded-2 fw-medium py-2 sidebar-btn">
               <i class="bi bi-gear me-1"></i>
@@ -178,7 +178,7 @@
               </div>
               <div class="d-flex justify-content-between align-items-center mt-1">
                 <span class="text-primary fs-7 fw-medium">
-                  Lv.{{ user.result?.level?.current?.level || 1 }}
+                  Lv.{{ calculateLevel(user.exp || 0) }}
                 </span>
                 <span class="text-muted fs-7">
                   {{ user.exp || 0 }} 经验
@@ -427,6 +427,12 @@ const detectDarkMode = () => {
   const pageDark = document.documentElement.classList.contains('dark')
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   isDarkMode.value = pageDark || systemDark
+}
+
+// 根据经验值计算等级
+const calculateLevel = (exp) => {
+  // 每100经验值升一级，经验值为0时显示Lv.0
+  return Math.floor(exp / 100)
 }
 
 // 导航方法

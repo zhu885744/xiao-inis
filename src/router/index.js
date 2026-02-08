@@ -51,6 +51,13 @@ const routes = [
     props: true
   },
   {
+    path: '/category/:id',
+    name: '分类页面',
+    component: () => import('@/views/index/pages/category.vue'),
+    meta: { title: '分类页面', requiresAuth: false },
+    props: true
+  },
+  {
     path: '/functions',
     name: '主题设置',
     component: () => import('@/views/index/pages/functions.vue'),
