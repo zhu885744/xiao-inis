@@ -327,18 +327,39 @@ const method = {
   showLogin: () => {
     if (loginDialog.value && loginDialog.value.show) {
       loginDialog.value.show()
+    } else {
+      // 延迟一下，确保对话框引用被正确初始化
+      setTimeout(() => {
+        if (loginDialog.value && loginDialog.value.show) {
+          loginDialog.value.show()
+        }
+      }, 100)
     }
   },
   
   showRegister: () => {
     if (registerDialog.value && registerDialog.value.show) {
       registerDialog.value.show()
+    } else {
+      // 延迟一下，确保对话框引用被正确初始化
+      setTimeout(() => {
+        if (registerDialog.value && registerDialog.value.show) {
+          registerDialog.value.show()
+        }
+      }, 100)
     }
   },
   
   showResetPassword: () => {
     if (resetDialog.value && resetDialog.value.show) {
       resetDialog.value.show()
+    } else {
+      // 延迟一下，确保对话框引用被正确初始化
+      setTimeout(() => {
+        if (resetDialog.value && resetDialog.value.show) {
+          resetDialog.value.show()
+        }
+      }, 100)
     }
   },
   

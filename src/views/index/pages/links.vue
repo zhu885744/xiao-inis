@@ -83,13 +83,29 @@
         <small>友链共 {{ linkTotal }} 条</small>
       </div>
     </div>
+    
+    <!-- 评论区域 -->
+    <div class="mt-4">
+      <i-comment 
+          :articleId="'links'" 
+          :commentCount="commentCount" 
+          :commentList="commentList" 
+          :isLogin="isLogin" 
+          :isDarkMode="isDarkMode"
+          @publishComment="handlePublishComment"
+          @replyComment="handleReplyComment"
+        />
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useCommStore } from '@/store/comm'
 import request from '@/utils/request'
 import iMarkdown from '@/comps/custom/i-markdown.vue'
+import iComment from '@/comps/custom/i-comment.vue'
 
 // 环境变量
 const SITE_TITLE = import.meta.env.VITE_TITLE || '朱某的生活印记'
@@ -111,6 +127,20 @@ const linkError = ref(false)
 const linkErrorMsg = ref('')
 const linkList = ref([]) // 存储全部友链数据
 const linkTotal = ref(0) // 友链总条数
+
+// 评论相关响应式数据
+const commentCount = ref(0)
+const commentList = ref([])
+const isDarkMode = ref(false)
+
+// 路由实例
+const router = useRouter()
+
+// 状态管理
+const store = useCommStore()
+
+// 计算属性
+const isLogin = computed(() => store.login.finish && Object.keys(store.login.user).length > 0)
 
 // 友链分组聚合
 const groupLinkMap = computed(() => {
@@ -181,10 +211,104 @@ const getAllLinks = async () => {
   }
 }
 
+// 获取友链页面评论
+const getComments = async () => {
+  try {
+    const res = await request.get('/api/comment/flat', {
+      bind_id: 'links',
+      bind_type: 'links',
+      page: 1,
+      limit: 50,
+      order: 'create_time desc'
+    })
+    
+    if (res.code === 200) {
+      commentCount.value = res.data?.count || 0
+      commentList.value = res.data?.data || []
+    }
+  } catch (error) {
+    console.error('获取评论失败：', error)
+  }
+}
+
+// 发布评论
+const handlePublishComment = async (data) => {
+  try {
+    const res = await request.post('/api/comment/create', {
+      content: data.content,
+      bind_type: 'links',
+      bind_id: 'links'
+    })
+    
+    if (res.code === 200) {
+      // 重新获取评论列表
+      await getComments()
+      // 显示成功提示
+      if (window.Toast) {
+        window.Toast.success('评论发布成功！')
+      }
+    } else {
+      // 显示失败提示
+      if (window.Toast) {
+        window.Toast.error(res.msg || '评论发布失败')
+      }
+    }
+  } catch (error) {
+    console.error('发布评论失败：', error)
+    if (window.Toast) {
+      window.Toast.error('网络异常，评论发布失败')
+    }
+  }
+}
+
+// 回复评论
+const handleReplyComment = async (data) => {
+  try {
+    const res = await request.post('/api/comment/create', {
+      content: data.content,
+      bind_type: 'links',
+      bind_id: 'links',
+      pid: data.commentId
+    })
+    
+    if (res.code === 200) {
+      // 重新获取评论列表
+      await getComments()
+      // 显示成功提示
+      if (window.Toast) {
+        window.Toast.success('回复发布成功！')
+      }
+    } else {
+      // 显示失败提示
+      if (window.Toast) {
+        window.Toast.error(res.msg || '回复发布失败')
+      }
+    }
+  } catch (error) {
+    console.error('回复评论失败：', error)
+    if (window.Toast) {
+      window.Toast.error('网络异常，回复发布失败')
+    }
+  }
+}
+
+
+
+// 检测深色模式
+const detectDarkMode = () => {
+  isDarkMode.value = document.documentElement.classList.contains('dark') || 
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
 // 页面初始化
 onMounted(async () => {
   await getPageData()
   await getAllLinks()
+  await getComments()
+  detectDarkMode()
+  
+  // 监听深色模式变化
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', detectDarkMode)
 })
 </script>
 

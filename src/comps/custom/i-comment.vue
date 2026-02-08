@@ -33,13 +33,13 @@
         <p class="mb-3 text-muted">登录后即可发表评论～</p>
         <div class="d-flex gap-2 justify-content-center">
           <button 
-            @click="emit('toLogin')"
+            @click="handleToLogin()"
             class="btn btn-primary btn-sm px-4 rounded-2"
           >
             登录
           </button>
           <button 
-            @click="emit('toRegister')"
+            @click="handleToRegister()"
             class="btn btn-outline-primary btn-sm px-4 rounded-2"
           >
             注册
@@ -48,11 +48,11 @@
       </div>
 
       <!-- 评论列表：接收props的评论数据，无数据时展示提示 -->
-      <div class="comments-list" v-if="commentList.length > 0">
+      <div class="comments-list" v-if="processedCommentList.length > 0">
         <div 
           class="comment-item pb-4 mb-4 border-bottom border-secondary-subtle"
-          v-for="(item, index) in commentList" 
-          :key="index"
+          v-for="(item, index) in processedCommentList" 
+          :key="item.id || index"
         >
           <div class="d-flex align-items-start mb-3">
             <img 
@@ -73,7 +73,7 @@
           <div class="d-flex gap-2">
             <button 
               class="btn btn-sm btn-outline-primary rounded-2" 
-              @click="handleReply(index)"
+              @click="toggleReplyForm(index)"
               v-if="isLogin"
             >
               <i class="bi bi-reply-fill me-1"></i> 回复
@@ -88,11 +88,37 @@
             </button>
           </div>
 
+          <!-- 回复输入框 -->
+          <div v-if="showReplyIndex === index" class="mt-3">
+            <textarea 
+              v-model="replyInput"
+              class="form-control rounded-2 border border-secondary-subtle bg-body" 
+              rows="2" 
+              placeholder="请输入你的回复..."
+              :class="{ 'bg-dark border-dark-subtle': isDarkMode }"
+            ></textarea>
+            <div class="d-flex gap-2 mt-2">
+              <button 
+                @click="handleSubmitReply(item.id || index)"
+                class="btn btn-sm btn-primary px-3 rounded-2"
+                :disabled="!replyInput.trim()"
+              >
+                发送回复
+              </button>
+              <button 
+                @click="cancelReply"
+                class="btn btn-sm btn-outline-secondary px-3 rounded-2"
+              >
+                取消
+              </button>
+            </div>
+          </div>
+
           <!-- 评论回复：嵌套展示，优化深色模式适配 -->
           <div 
             class="ms-5 mt-3 pt-3 border-top border-secondary-subtle"
             v-for="(reply, rIndex) in item.replies" 
-            :key="rIndex"
+            :key="reply.id || rIndex"
           >
             <div class="d-flex align-items-start mb-3">
               <img 
@@ -115,6 +141,7 @@
             <div class="d-flex gap-2">
               <button 
                 class="btn btn-sm btn-outline-primary rounded-2" 
+                @click="toggleReplyForm(index)"
                 v-if="isLogin"
               >
                 <i class="bi bi-reply-fill me-1"></i> 回复
@@ -141,7 +168,8 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, onMounted, watch } from 'vue'
+import { ref, defineProps, defineEmits, onMounted, watch, computed } from 'vue'
+import { useCommStore } from '@/store/comm'
 
 // 🌟 1. 定义组件接收的props
 const props = defineProps({
@@ -170,18 +198,64 @@ const props = defineProps({
   }
 })
 
+// 存储
+const store = useCommStore()
+
 // 🌟 2. 定义组件向外触发的事件
 const emit = defineEmits(['publishComment', 'replyComment', 'toLogin', 'toRegister'])
 
 // 🌟 3. 组件内部响应式状态
 const commentInput = ref('')
+const replyInput = ref('')
+const showReplyIndex = ref(null)
 // 自动检测系统深色模式（兜底方案）
 const isSystemDark = ref(false)
+
+// 🌟 4. 处理评论数据，适配 API 返回格式
+const processedCommentList = computed(() => {
+  return props.commentList.map(item => {
+    // 格式化时间
+    const formatTime = (timestamp) => {
+      if (!timestamp || timestamp === 0) return '未知时间'
+      const date = new Date(timestamp * 1000)
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+    }
+    
+    // 处理回复数据
+    const processReplies = (replies) => {
+      if (!Array.isArray(replies)) return []
+      return replies.map(reply => {
+        return {
+          id: reply.id,
+          avatar: reply.result?.author?.avatar?.trim() || reply.avatar || 'https://picsum.photos/62/62',
+          nickname: reply.result?.author?.nickname || reply.nickname || '匿名用户',
+          time: formatTime(reply.create_time || reply.time || reply.update_time),
+          content: reply.content || '',
+          isAuthor: reply.result?.author?.isAuthor || reply.isAuthor || false
+        }
+      })
+    }
+    
+    return {
+      id: item.id,
+      avatar: item.result?.author?.avatar?.trim() || item.avatar || 'https://picsum.photos/60/60',
+      nickname: item.result?.author?.nickname || item.nickname || '匿名用户',
+      time: formatTime(item.create_time || item.time || item.update_time),
+      content: item.content || '',
+      isAuthor: item.result?.author?.isAuthor || item.isAuthor || false,
+      replies: processReplies(item.replies)
+    }
+  })
+})
 
 // 🌟 4. 发布评论处理
 const handlePublish = () => {
   const content = commentInput.value.trim()
   if (!content) return
+  console.log('发布评论:', {
+    articleId: props.articleId,
+    content
+  })
   emit('publishComment', {
     articleId: props.articleId,
     content
@@ -189,25 +263,58 @@ const handlePublish = () => {
   commentInput.value = ''
 }
 
-// 🌟 5. 回复评论处理
-const handleReply = (index) => {
-  if (!props.isLogin) return
-  emit('replyComment', {
-    articleId: props.articleId,
-    commentIndex: index
-  })
-  // 优化回复体验：自动填充回复前缀并聚焦
-  commentInput.value = `回复 #${index+1}：`
-  setTimeout(() => {
-    const textarea = document.querySelector('textarea[placeholder="请输入你的评论..."]')
-    if (textarea) {
-      textarea.focus()
-      textarea.setSelectionRange(commentInput.value.length, commentInput.value.length)
-    }
-  }, 100)
+// 🌟 5. 切换回复输入框
+const toggleReplyForm = (index) => {
+  if (showReplyIndex.value === index) {
+    showReplyIndex.value = null
+    replyInput.value = ''
+  } else {
+    showReplyIndex.value = index
+    replyInput.value = ''
+    // 自动聚焦回复输入框
+    setTimeout(() => {
+      const textarea = document.querySelector('textarea[placeholder="请输入你的回复..."]')
+      if (textarea) {
+        textarea.focus()
+      }
+    }, 100)
+  }
 }
 
-// 🌟 6. 初始化Bootstrap tooltip + 检测系统深色模式
+// 🌟 6. 提交回复
+const handleSubmitReply = (commentId) => {
+  const content = replyInput.value.trim()
+  if (!content) return
+  console.log('提交回复:', {
+    articleId: props.articleId,
+    commentId,
+    content
+  })
+  emit('replyComment', {
+    articleId: props.articleId,
+    commentId,
+    content
+  })
+  showReplyIndex.value = null
+  replyInput.value = ''
+}
+
+// 🌟 7. 取消回复
+const cancelReply = () => {
+  showReplyIndex.value = null
+  replyInput.value = ''
+}
+
+// 🌟 8. 处理登录注册
+const handleToLogin = () => {
+  store.switchAuth('login', true)
+}
+
+const handleToRegister = () => {
+  store.switchAuth('register', true)
+}
+
+// 🌟 9. 初始化Bootstrap tooltip + 检测系统深色模式
 onMounted(() => {
   // 初始化tooltip
   if (window.bootstrap) {
@@ -223,7 +330,7 @@ onMounted(() => {
   }
 })
 
-// 🌟 7. 监听深色模式变化，更新tooltip样式
+// 🌟 10. 监听深色模式变化，更新tooltip样式
 watch([() => props.isDarkMode, isSystemDark], () => {
   if (window.bootstrap) {
     document.querySelectorAll('.tooltip').forEach(el => {

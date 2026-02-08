@@ -52,12 +52,13 @@
       <!-- 评论组件：优化间距，自然衔接 -->
       <section class="article-comment mt-2 mb-8">
         <CommentList
-          :article-id="props.id"
-          :comment-count="articleInfo.result?.comment?.count || 0"
-          :comment-list="staticCommentList"
-          :is-login="store.comm.login.finish"
-          @publish-comment="handlePublishComment"
-          @reply-comment="handleReplyComment"
+          :articleId="props.id"
+          :commentCount="commentCount"
+          :commentList="staticCommentList"
+          :isLogin="isLogin"
+          :isDarkMode="isDarkMode"
+          @publishComment="handlePublishComment"
+          @replyComment="handleReplyComment"
         />
       </section>
     </div>
@@ -65,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineProps, watch } from 'vue'
+import { ref, onMounted, defineProps, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
 import iMarkdown from '@/comps/custom/i-markdown.vue'
@@ -94,8 +95,10 @@ const error = ref(false)
 const errorMsg = ref('')
 const articleInfo = ref({})
 const pageTitle = ref(`加载中... - ${SITE_TITLE}`)
-// 补全评论列表空值，防止组件报错
+// 评论相关响应式数据
 const staticCommentList = ref([])
+const commentCount = ref(0)
+const isDarkMode = ref(false)
 
 // 路由实例
 const router = useRouter()
@@ -153,6 +156,8 @@ const getArticleDetail = async (id) => {
         articleInfo.value = res.data
         error.value = false
         pageTitle.value = `${articleInfo.value.title} - ${SITE_TITLE}`
+        // 获取文章评论
+        getComments(props.id)
       }
     } else {
       error.value = true
@@ -169,14 +174,96 @@ const getArticleDetail = async (id) => {
   }
 }
 
-// 补全评论回调方法，防止组件触发报错
-const handlePublishComment = (comment) => {
-  console.log('发布评论：', comment)
-  // 后续可补充实际提交逻辑
+// 计算属性
+const isLogin = computed(() => store.comm.login.finish && Object.keys(store.comm.login.user).length > 0)
+
+// 获取文章评论
+const getComments = async (articleId) => {
+  try {
+    const res = await request.get('/api/comment/flat', {
+      bind_id: articleId,
+      bind_type: 'article',
+      page: 1,
+      limit: 50,
+      order: 'create_time desc'
+    })
+    
+    if (res.code === 200) {
+      commentCount.value = res.data?.count || 0
+      staticCommentList.value = res.data?.data || []
+    }
+  } catch (error) {
+    console.error('获取评论失败：', error)
+  }
 }
-const handleReplyComment = (reply, parentId) => {
-  console.log('回复评论：', reply, '父评论ID：', parentId)
-  // 后续可补充实际回复逻辑
+
+// 发布评论
+const handlePublishComment = async (data) => {
+  try {
+    const res = await request.post('/api/comment/create', {
+      content: data.content,
+      bind_type: 'article',
+      bind_id: props.id
+    })
+    
+    if (res.code === 200) {
+      // 重新获取评论列表
+      await getComments(props.id)
+      // 显示成功提示
+      if (window.Toast) {
+        window.Toast.success('评论发布成功！')
+      }
+    } else {
+      // 显示失败提示
+      if (window.Toast) {
+        window.Toast.error(res.msg || '评论发布失败')
+      }
+    }
+  } catch (error) {
+    console.error('发布评论失败：', error)
+    if (window.Toast) {
+      window.Toast.error('网络异常，评论发布失败')
+    }
+  }
+}
+
+// 回复评论
+const handleReplyComment = async (data) => {
+  try {
+    const res = await request.post('/api/comment/create', {
+      content: data.content,
+      bind_type: 'article',
+      bind_id: props.id,
+      pid: data.commentId
+    })
+    
+    if (res.code === 200) {
+      // 重新获取评论列表
+      await getComments(props.id)
+      // 显示成功提示
+      if (window.Toast) {
+        window.Toast.success('回复发布成功！')
+      }
+    } else {
+      // 显示失败提示
+      if (window.Toast) {
+        window.Toast.error(res.msg || '回复发布失败')
+      }
+    }
+  } catch (error) {
+    console.error('回复评论失败：', error)
+    if (window.Toast) {
+      window.Toast.error('网络异常，回复发布失败')
+    }
+  }
+}
+
+
+
+// 检测深色模式
+const detectDarkMode = () => {
+  isDarkMode.value = document.documentElement.classList.contains('dark') || 
+    window.matchMedia('(prefers-color-scheme: dark)').matches
 }
 
 // 页面挂载执行核心逻辑
@@ -189,6 +276,11 @@ onMounted(() => {
     pageTitle.value = `文章ID不合法 - ${SITE_TITLE}`
     setTimeout(() => router.go(-1), 3000)
   }
+  
+  detectDarkMode()
+  
+  // 监听深色模式变化
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', detectDarkMode)
 })
 </script>
 

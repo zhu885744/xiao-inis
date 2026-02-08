@@ -78,21 +78,25 @@ const logout = async (state = {}, path = null) => {
 }
 
 export const useCommStore = defineStore('comm', {
-    state: () => ({
-        auth: {
-            login: false,
-            reset: false,
-            register: false,
-        },
-        login: {
-            finish: false,
-            user: cache.get('user-info') || {}
-        },
-        progress: false,
-        nav: {
-            title: ''
+    state: () => {
+        const cachedUser = cache.get('user-info') || {}
+        const hasUser = !utils.is.empty(cachedUser)
+        return {
+            auth: {
+                login: false,
+                reset: false,
+                register: false,
+            },
+            login: {
+                finish: hasUser,
+                user: cachedUser
+            },
+            progress: false,
+            nav: {
+                title: ''
+            }
         }
-    }),
+    },
     actions: {
         switchAuth(name = 'login', bool = true) {
             for (const key in this.auth) {

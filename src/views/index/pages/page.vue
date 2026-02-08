@@ -22,15 +22,30 @@
           <i-markdown :model-value="pageInfo.content || '暂无页面内容，敬请期待～'" />
         </div>
       </main>
+      
+      <!-- 评论区域 -->
+      <div class="mt-4">
+        <i-comment 
+          :articleId="pageInfo.id" 
+          :commentCount="commentCount" 
+          :commentList="commentList" 
+          :isLogin="isLogin" 
+          :isDarkMode="isDarkMode"
+          @publishComment="handlePublishComment"
+          @replyComment="handleReplyComment"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, defineProps, watch } from 'vue'
+import { ref, onMounted, defineProps, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useCommStore } from '@/store/comm'
 import request from '@/utils/request'
 import iMarkdown from '@/comps/custom/i-markdown.vue'
+import iComment from '@/comps/custom/i-comment.vue'
 
 // 环境变量网站标题，兜底处理
 const SITE_TITLE = import.meta.env.VITE_TITLE || '朱某的生活印记'
@@ -54,6 +69,17 @@ const pageTitle = ref(`加载中... - ${SITE_TITLE}`)
 // 路由实例
 const router = useRouter()
 const route = useRoute()
+
+// 状态管理
+const store = useCommStore()
+
+// 评论相关响应式数据
+const commentCount = ref(0)
+const commentList = ref([])
+const isDarkMode = ref(false)
+
+// 计算属性
+const isLogin = computed(() => store.login.finish && Object.keys(store.login.user).length > 0)
 
 // 监听页面标题更新浏览器标签
 watch(
@@ -159,10 +185,114 @@ watch(
   { immediate: false }
 )
 
+// 获取页面评论
+const getComments = async (pageId) => {
+  try {
+    const res = await request.get('/api/comment/flat', {
+      bind_id: pageId,
+      bind_type: 'page',
+      page: 1,
+      limit: 50,
+      order: 'create_time desc'
+    })
+    
+    if (res.code === 200) {
+      commentCount.value = res.data?.count || 0
+      commentList.value = res.data?.data || []
+    }
+  } catch (error) {
+    console.error('获取评论失败：', error)
+  }
+}
+
+// 发布评论
+const handlePublishComment = async (data) => {
+  try {
+    const res = await request.post('/api/comment/create', {
+      content: data.content,
+      bind_type: 'page',
+      bind_id: pageInfo.value.id
+    })
+    
+    if (res.code === 200) {
+      // 重新获取评论列表
+      await getComments(pageInfo.value.id)
+      // 显示成功提示
+      if (window.Toast) {
+        window.Toast.success('评论发布成功！')
+      }
+    } else {
+      // 显示失败提示
+      if (window.Toast) {
+        window.Toast.error(res.msg || '评论发布失败')
+      }
+    }
+  } catch (error) {
+    console.error('发布评论失败：', error)
+    if (window.Toast) {
+      window.Toast.error('网络异常，评论发布失败')
+    }
+  }
+}
+
+// 回复评论
+const handleReplyComment = async (data) => {
+  try {
+    const res = await request.post('/api/comment/create', {
+      content: data.content,
+      bind_type: 'page',
+      bind_id: pageInfo.value.id,
+      pid: data.commentId
+    })
+    
+    if (res.code === 200) {
+      // 重新获取评论列表
+      await getComments(pageInfo.value.id)
+      // 显示成功提示
+      if (window.Toast) {
+        window.Toast.success('回复发布成功！')
+      }
+    } else {
+      // 显示失败提示
+      if (window.Toast) {
+        window.Toast.error(res.msg || '回复发布失败')
+      }
+    }
+  } catch (error) {
+    console.error('回复评论失败：', error)
+    if (window.Toast) {
+      window.Toast.error('网络异常，回复发布失败')
+    }
+  }
+}
+
+
+
+// 检测深色模式
+const detectDarkMode = () => {
+  isDarkMode.value = document.documentElement.classList.contains('dark') || 
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
 // 页面挂载初始化
 onMounted(() => {
   initPage()
+  detectDarkMode()
+  
+  // 监听深色模式变化
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', detectDarkMode)
 })
+
+// 监听页面信息变化，获取评论
+watch(
+  () => pageInfo.value.id,
+  (newId) => {
+    if (newId) {
+      getComments(newId)
+    }
+  },
+  { immediate: false }
+)
 </script>
 
 <style scoped>

@@ -6,8 +6,10 @@ const VITE_ENV = import.meta.env
 
 // 设置超时
 axios.defaults.timeout = 60 * 1000
-// 基础地址：环境变量优先，全局inis.api.uri兜底，最后兜底空字符串（保留原有兜底逻辑）
-axios.defaults.baseURL = VITE_ENV.VITE_API_URI || globalThis?.inis?.api?.uri || ''
+// 基础地址：开发环境使用相对路径，生产环境使用环境变量或全局配置
+// 开发环境使用相对路径，通过 Vite 代理转发请求
+// 生产环境直接使用配置的 API 地址
+axios.defaults.baseURL = import.meta.env.DEV ? '' : (VITE_ENV.VITE_API_URI || globalThis?.inis?.api?.uri || '')
 
 // 请求拦截
 // 所有的网络请求都会先走这个方法
@@ -42,8 +44,10 @@ export default {
     // all
     all: async array => await axios.all(array),
 
-    // GET请求：保留原有封装方式，不修改
-    get: async (url, params = {}, config = {}) => await axios.get(url, { params, ...config }),
+    // GET请求：直接传递参数
+    get: async (url, params = {}) => {
+      return await axios.get(url, { params })
+    },
 
     // DELETE请求：保留原有封装方式，不修改
     del: async (url, params = {}, config = {}) => await axios.delete(url, { params, ...config }),
